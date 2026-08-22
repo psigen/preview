@@ -1,0 +1,256 @@
+/* Design tokens: the first block is byte-identical to videoclip's, so the two apps read as
+   siblings. Only the four HUD-specific tokens below it are new. Dark only, no theme toggle. */
+:root {
+  --bg: #0f1115;
+  --panel: #1a1d24;
+  --panel-2: #232730;
+  --border: #2e333d;
+  --text: #e7e9ee;
+  --muted: #9aa1ad;
+  --accent: #5b8cff;
+  --accent-2: #3f6fe0;
+  --good: #43c98a;
+  --warn: #f0b34a;
+  --error: #ff6b6b;
+  --radius: 10px;
+
+  /* preview-only: panels float over a full-viewport canvas rather than stacking in a column. */
+  --panel-glass: rgba(26, 29, 36, 0.82);
+  --shadow: 0 6px 24px rgba(0, 0, 0, 0.45);
+  --radius-sm: 6px;
+  --hud-gap: 12px;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  background: var(--bg);
+  color: var(--text);
+  font: 15px/1.5 -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+}
+
+/* videoclip has no focus styling at all; every control here must show focus. */
+:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+  border-radius: var(--radius-sm);
+}
+
+/* ---- app frame ---------------------------------------------------------- */
+
+.viewer-app {
+  position: fixed;
+  inset: 0;
+  overflow: hidden;
+}
+
+.viewer-canvas {
+  position: absolute;
+  inset: 0;
+}
+
+/* HUD layers let orbit drags pass through the gaps between panels. */
+.hud {
+  position: absolute;
+  z-index: 2;
+  display: flex;
+  gap: var(--hud-gap);
+  pointer-events: none;
+}
+
+.hud > * {
+  pointer-events: auto;
+}
+
+.hud-top-left {
+  top: var(--hud-gap);
+  left: var(--hud-gap);
+  flex-direction: column;
+}
+
+.hud-left {
+  top: 50%;
+  left: var(--hud-gap);
+  transform: translateY(-50%);
+  flex-direction: column;
+}
+
+.hud-right {
+  top: var(--hud-gap);
+  right: var(--hud-gap);
+  bottom: var(--hud-gap);
+  flex-direction: column;
+  overflow-y: auto;
+  max-width: 320px;
+}
+
+.hud-bottom {
+  bottom: var(--hud-gap);
+  left: 50%;
+  transform: translateX(-50%);
+}
+
+.panel-glass {
+  background: var(--panel-glass);
+  -webkit-backdrop-filter: blur(8px);
+  backdrop-filter: blur(8px);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow);
+}
+
+.pad {
+  padding: 10px 12px;
+}
+
+/* ---- shared primitives (carried over from videoclip) --------------------- */
+
+.card {
+  background: var(--panel);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 18px;
+  margin-bottom: 18px;
+}
+
+button,
+a.primary {
+  background: var(--panel-2);
+  color: var(--text);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 8px 14px;
+  font: inherit;
+  cursor: pointer;
+  transition:
+    background 0.15s,
+    border-color 0.15s;
+}
+
+button:hover:not(:disabled) {
+  border-color: var(--accent);
+}
+
+button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+button.primary,
+a.primary {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: #fff;
+  font-weight: 600;
+  text-decoration: none;
+  display: inline-block;
+}
+
+button.secondary {
+  border-color: var(--accent);
+  color: var(--accent);
+}
+
+button.link {
+  background: none;
+  border: none;
+  color: var(--accent);
+  padding: 2px 4px;
+  font-size: 12px;
+}
+
+.seg {
+  display: inline-flex;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  overflow: hidden;
+}
+
+.seg.vertical {
+  flex-direction: column;
+}
+
+.seg button {
+  border: none;
+  border-radius: 0;
+  background: var(--panel-2);
+}
+
+.seg button.active,
+.seg button[aria-pressed='true'] {
+  background: var(--accent);
+  color: #fff;
+}
+
+.hint {
+  color: var(--muted);
+  font-size: 13px;
+  margin: 4px 0 0;
+}
+
+.hint.warn {
+  color: var(--warn);
+}
+
+.error {
+  color: var(--error);
+  margin: 8px 0 0;
+  font-size: 13px;
+}
+
+progress {
+  height: 8px;
+}
+
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+/* ---- static pages -------------------------------------------------------- */
+
+.prose-page {
+  max-width: 860px;
+  margin: 0 auto;
+  padding: 28px 20px 64px;
+}
+
+.prose h1 {
+  margin: 0 0 12px;
+  font-size: 24px;
+}
+
+.prose h2 {
+  font-size: 17px;
+  margin: 20px 0 6px;
+}
+
+.prose a {
+  color: var(--accent);
+}
+
+.prose code {
+  background: var(--panel-2);
+  padding: 1px 5px;
+  border-radius: 4px;
+  font-size: 13px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    transition-duration: 0.01ms !important;
+    animation-duration: 0.01ms !important;
+  }
+}

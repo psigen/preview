@@ -1,0 +1,16 @@
+{
+  "configurations": [
+    {
+      "name": "dev",
+      "command": "nix develop --command npm run dev",
+      "cwd": "${workspaceFolder}",
+      "url": "http://localhost:5173"
+    },
+    {
+      "name": "preview",
+      "command": "nix develop --command npm run preview",
+      "cwd": "${workspaceFolder}",
+      "url": "http://localhost:4173"
+    }
+  ]
+}
