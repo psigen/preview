@@ -25,9 +25,10 @@ and the format-detection library; the viewer, loader plugins and ruler are still
 | Toolchain, CI, GitHub Pages deploy, decoder staging | done |
 | Format detection (`src/lib/detect/`) | done |
 | Units, camera and budget maths (`src/lib/`) | done |
+| Asset contract: payload, orientation, stats, bounds, disposal | done |
 | Viewer, loader plugins, measurement ruler | not yet |
 
-157 tests currently pass, all headless.
+245 tests currently pass, all headless.
 
 The feature list above describes the target. Nothing in it is wired up yet.
 
@@ -150,8 +151,16 @@ To build without CAD support — and therefore with no LGPL artifacts at all —
 ```
 src/
   lib/detect/          # magic-byte format detection — pure, no three, no DOM, own test suite
+  lib/asset/           # the contract every format plugin fulfils
+    types.ts           #   UnitInfo, UpAxis, LoadedModel, AssetStats, warnings
+    payload.ts         #   the transferable intermediate + buildScene()
+    orient.ts          #   up-axis normalisation and worldFromFile
+    stats.ts           #   world-space counting and measurement
+    dispose.ts         #   GPU resource release
+  lib/load/            # finalize() and, for now, a stub loader
   lib/units.ts         # unit table, conversion, and the display-precision rule
   lib/camera.ts        # standard views, fit distance, scale-relative depth range
+  lib/bounds.ts        # world bounds, union-of-spheres, grid sizing
   lib/vec3.ts          # tuple vector maths shared by camera, bounds and measurement
   lib/limits.ts        # size/complexity budgets and the degradation they drive
   lib/format-id.ts     # the shared format vocabulary
