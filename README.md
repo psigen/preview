@@ -23,9 +23,11 @@ and the format-detection library; the viewer, loader plugins and ruler are still
 | Area | State |
 | --- | --- |
 | Toolchain, CI, GitHub Pages deploy, decoder staging | done |
-| Format detection (`src/lib/detect/`) | done — 54 tests |
-| Units / camera / limits maths | next |
+| Format detection (`src/lib/detect/`) | done |
+| Units, camera and budget maths (`src/lib/`) | done |
 | Viewer, loader plugins, measurement ruler | not yet |
+
+157 tests currently pass, all headless.
 
 The feature list above describes the target. Nothing in it is wired up yet.
 
@@ -101,7 +103,7 @@ invent one when it doesn't:
 | Source says | Ruler shows |
 | --- | --- |
 | USD `metersPerUnit`, glTF metres, a STEP/IGES unit, a 3MF `unit` | `124.53 mm` — real, converted |
-| Nothing (STL, PLY, OBJ, FBX) | `37.4166 u` — abstract, with no assumed scale |
+| Nothing (STL, PLY, OBJ, FBX) | `37.417 u` — abstract, with no assumed scale |
 
 A model is never rescaled to fit the view; the camera fits to the model instead. Up-axis
 correction is a rotation, which cannot change a distance, so a measurement reads the same
@@ -148,6 +150,10 @@ To build without CAD support — and therefore with no LGPL artifacts at all —
 ```
 src/
   lib/detect/          # magic-byte format detection — pure, no three, no DOM, own test suite
+  lib/units.ts         # unit table, conversion, and the display-precision rule
+  lib/camera.ts        # standard views, fit distance, scale-relative depth range
+  lib/vec3.ts          # tuple vector maths shared by camera, bounds and measurement
+  lib/limits.ts        # size/complexity budgets and the degradation they drive
   lib/format-id.ts     # the shared format vocabulary
   App.tsx, main.tsx    # app shell and hash routing
   styles.css           # one global stylesheet, tokens shared with videoclip
