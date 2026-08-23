@@ -21,6 +21,17 @@ const root = resolve(fileURLToPath(new URL('..', import.meta.url)));
 const outRoot = join(root, 'public', 'vendor');
 const check = process.argv.includes('--check');
 
+/**
+ * VITE_ENABLE_CAD=0 produces a build with no LGPL artifacts at all.
+ *
+ * The Open CASCADE wasm is the only encumbered dependency, and it is also by far the
+ * largest thing shipped: 7.7 MB with its licence texts. Gating it here rather than only in
+ * the bundle is what makes the flag meaningful, because the wasm never enters the bundle in
+ * the first place — it is staged as a separate file precisely so LGPL relinking stays
+ * possible.
+ */
+const cadEnabled = process.env.VITE_ENABLE_CAD !== '0';
+
 // Resolve through the package exports map, never a hand-built node_modules/ path:
 // three's exports expose "./examples/jsm/*" but have NO "./package.json" entry, so
 // require.resolve('three/package.json') throws. import.meta.resolve also survives
@@ -51,6 +62,7 @@ const VENDOR = [
   },
   {
     to: 'occt',
+    cad: true,
     from: 'occt-import-js/dist/',
     // occt-import-js.wasm is fetched at runtime and handed to the module factory as
     // `wasmBinary` (docs/SPIKES.md S2). The .js glue is NOT fetched — it bundles into the
@@ -73,7 +85,13 @@ let skipped = 0;
 const missing = [];
 const manifest = { generatedBy: 'scripts/copy-wasm.mjs', entries: {} };
 
+let skippedCad = 0;
+
 for (const group of VENDOR) {
+  if (group.cad && !cadEnabled) {
+    skippedCad += group.files.length;
+    continue;
+  }
   for (const name of group.files) {
     const srcPath = resolveSpec(group.from + name);
     if (!srcPath || !existsSync(srcPath)) {
@@ -116,5 +134,6 @@ if (missing.length) {
 const total = copied + skipped;
 console.log(
   `[copy-wasm] ${total} file(s) staged in public/vendor (${copied} written, ${skipped} unchanged)` +
+    (skippedCad ? `; ${skippedCad} CAD file(s) skipped (VITE_ENABLE_CAD=0)` : '') +
     (check ? ' — check passed' : ''),
 );

@@ -23,11 +23,8 @@ export const stlPipeline: GeometryPipeline = {
     const warnings: LoadWarning[] = [];
     const mesh = meshPayloadFromGeometry(geometry, input.primary.name, 'triangles');
 
-    // STLLoader always emits normals — per-facet ones straight from the file. Note them
-    // being absent rather than silently recomputing, since that would be surprising.
-    if (!mesh.normals) {
-      warnings.push(warn('no-normals', 'No facet normals in this STL; they were derived from the geometry.', 'info'));
-    }
+    // No no-normals branch: STLLoader sets the normal attribute on both its binary and
+    // ASCII paths, and the format requires a facet normal on every facet, so it cannot fire.
     if (mesh.colors) {
       // Only some writers emit these, via a non-standard header extension.
       warnings.push(warn('unsupported-feature', 'Per-facet colours were found and applied.', 'info'));

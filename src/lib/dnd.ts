@@ -89,8 +89,6 @@ export interface Selection {
   readonly primary: DroppedFile | null;
   /** Everything else, keyed by normalised path, for sidecar resolution. */
   readonly companions: ReadonlyMap<string, DroppedFile>;
-  /** Loadable files that lost to the primary — offered as an "open instead" list. */
-  readonly alternatives: readonly DroppedFile[];
 }
 
 /**
@@ -125,9 +123,5 @@ export function selectPrimary(files: readonly DroppedFile[]): Selection {
     companions.set(f.path, f);
   }
 
-  return {
-    primary,
-    companions,
-    alternatives: scored.slice(1).map((s) => s.file),
-  };
+  return { primary, companions };
 }

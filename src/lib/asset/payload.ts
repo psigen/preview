@@ -130,7 +130,10 @@ function buildMaterial(spec: MaterialPayload, topology: Topology): Material {
   const transparent = spec.opacity !== undefined && spec.opacity < 1;
 
   if (topology === 'points') {
-    const m = new PointsMaterial({ size: 1, sizeAttenuation: false });
+    // Screen-space sizing, so a point cloud looks the same at any zoom or model scale, and
+    // large enough to actually see: size 1 is a single DEVICE pixel, which is half a CSS
+    // pixel at dpr 2 and effectively invisible.
+    const m = new PointsMaterial({ size: 3, sizeAttenuation: false });
     if (color) m.color = color;
     if (spec.vertexColors) m.vertexColors = true;
     if (spec.opacity !== undefined) { m.opacity = spec.opacity; m.transparent = transparent; }

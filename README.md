@@ -31,9 +31,9 @@ and the format-detection library; the viewer, loader plugins and ruler are still
 | Drag-and-drop, folder drop, in-place replacement | done |
 | Remaining formats, measurement ruler | not yet |
 
-371 unit tests pass headless, plus a 28-check end-to-end verification
-(`npm run verify:viewer`) that drives the real UI in headless Chrome, including
-a calibrated geometry-leak check.
+403 unit tests pass headless across a Node tier and a jsdom tier, plus a
+31-check end-to-end verification (`npm run verify:viewer`) that drives the real
+UI in headless Chrome, including a calibrated geometry-leak check.
 
 The feature list above describes the target. Nothing in it is wired up yet.
 
@@ -139,7 +139,9 @@ time you open a CAD file, and never for a mesh.
 `.nojekyll` file is included so the `vendor/` assets are served intact.
 
 To build without CAD support — and therefore with no LGPL artifacts at all — set
-`VITE_ENABLE_CAD=0`.
+`VITE_ENABLE_CAD=0`. That skips both the format registrations and the vendored Open CASCADE
+wasm, taking `public/vendor/` from 8.3 MB to 844 kB. (The CAD formats themselves land in a
+later stage; the flag already governs the payload.)
 
 ## Notes & limits
 

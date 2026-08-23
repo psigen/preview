@@ -243,6 +243,27 @@ try {
   await click('[data-view="fit"]');
   check('Fit runs without error', true);
 
+  // Keyboard shortcuts. These existed, were silently dropped by a refactor, and nothing
+  // noticed — so they are checked end to end now, not only as pure key mapping.
+  const pressKey = (key) => evalJs(`(() => {
+    document.body.dispatchEvent(new KeyboardEvent('keydown',
+      { key: ${JSON.stringify(key)}, bubbles: true, cancelable: true }));
+    return true;
+  })()`);
+  const pressedView = () => evalJs(
+    `[...document.querySelectorAll('[data-view]')].find(b=>b.getAttribute('aria-pressed')==='true')?.dataset.view ?? ''`);
+
+  await click('[data-view="iso"]');
+  await pressKey('5');
+  await wait(900);
+  check('the "5" shortcut snaps to Top', (await pressedView()) === 'top');
+  await pressKey('1');
+  await wait(900);
+  check('the "1" shortcut snaps to Front', (await pressedView()) === 'front');
+  await pressKey('f');
+  await wait(900);
+  check('the "f" shortcut runs Fit without error', true);
+
   // 3. Idempotence: a second press must not unwind and re-approach.
   await click('[data-view="top"]');
   const top1 = await shot();

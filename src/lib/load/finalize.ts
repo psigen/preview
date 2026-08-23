@@ -40,7 +40,8 @@ export function finalize(raw: RawAsset, meta: FinalizeMeta): LoadedModel {
     warnings.push(
       warn(
         'up-axis-unknown',
-        'This format does not record an up axis; Y-up was assumed. Use the Z/Y toggle if the model looks rotated.',
+        'This format does not record an up axis, so the model is shown exactly as authored. ' +
+          'It may appear lying on its side if it was made in a Z-up tool.',
         'info',
       ),
     );

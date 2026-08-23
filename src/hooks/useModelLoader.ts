@@ -19,8 +19,6 @@ export interface ModelLoaderState {
   readonly error: string | null;
   /** Set when a file is large enough that opening it might kill the tab. */
   readonly pendingLarge: PendingLarge | null;
-  /** Files kept from the drop for sidecar resolution. */
-  readonly companionCount: number;
   open(files: readonly DroppedFile[], truncated?: boolean): void;
   dismissError(): void;
 }
@@ -38,7 +36,6 @@ export function useModelLoader(): ModelLoaderState {
   const [busy, setBusy] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [pendingLarge, setPendingLarge] = useState<PendingLarge | null>(null);
-  const [companionCount, setCompanionCount] = useState(0);
 
   const currentRef = useRef<LoadedModel | null>(null);
   // Only the newest request may commit; an earlier slow load must not overwrite it.
@@ -52,12 +49,13 @@ export function useModelLoader(): ModelLoaderState {
     [],
   );
 
-  const run = useCallback(async (primary: DroppedFile, companions: number) => {
+  const run = useCallback(async (primary: DroppedFile, notice: string | null) => {
     const token = ++requestRef.current;
     setBusy(`Reading ${primary.file.name}…`);
-    setError(null);
+    // `notice` survives the reset: a partial folder scan still loads, and the caveat is the
+    // whole point. Clearing it here is what previously made that warning unreachable.
+    setError(notice);
     setPendingLarge(null);
-    setCompanionCount(companions);
 
     try {
       const bytes = await primary.file.arrayBuffer();
@@ -97,7 +95,7 @@ export function useModelLoader(): ModelLoaderState {
 
   const open = useCallback(
     (files: readonly DroppedFile[], truncated = false) => {
-      const { primary, companions } = selectPrimary(files);
+      const { primary } = selectPrimary(files);
 
       if (!primary) {
         const names = files.slice(0, 3).map((f) => f.path).join(', ');
@@ -110,9 +108,9 @@ export function useModelLoader(): ModelLoaderState {
         return;
       }
 
-      if (truncated) {
-        setError('That folder was too large to read completely; only part of it was scanned.');
-      }
+      const notice = truncated
+        ? 'That folder was too large to read completely, so only part of it was scanned.'
+        : null;
 
       // Check the size BEFORE reading a byte. Once a parse of a 500 MB mesh is under way
       // there is no recovery path — the tab simply dies — so this is the one place a
@@ -121,18 +119,18 @@ export function useModelLoader(): ModelLoaderState {
       if (tooBig && message) {
         setPendingLarge({
           message,
-          confirm: () => void run(primary, companions.size),
+          confirm: () => void run(primary, notice),
           cancel: () => setPendingLarge(null),
         });
         return;
       }
 
-      void run(primary, companions.size);
+      void run(primary, notice);
     },
     [run],
   );
 
   const dismissError = useCallback(() => setError(null), []);
 
-  return { model, busy, error, pendingLarge, companionCount, open, dismissError };
+  return { model, busy, error, pendingLarge, open, dismissError };
 }

@@ -138,10 +138,13 @@ describe('warnings', () => {
     expect(fin(stubRawAsset()).warnings.some((w) => w.code === 'units-unknown')).toBe(false);
   });
 
-  it('flags an unknown up axis and points at the toggle', () => {
+  it('flags an unknown up axis and explains what the user will see', () => {
     const model = fin(stubRawAsset({ sourceUpAxis: 'unknown' }));
     const w = model.warnings.find((x) => x.code === 'up-axis-unknown');
-    expect(w?.message).toMatch(/toggle/i);
+    expect(w?.severity).toBe('info');
+    // Must describe the consequence, and must not promise a control that does not exist.
+    expect(w?.message).toMatch(/side/i);
+    expect(w?.message).not.toMatch(/toggle/i);
   });
 
   it('reports a file that parsed but holds no renderable geometry', () => {

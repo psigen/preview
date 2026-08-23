@@ -161,7 +161,6 @@ describe('selectPrimary', () => {
   it('returns nothing loadable for a drop with no recognised extension', () => {
     const s = selectPrimary([dropped('readme.txt'), dropped('notes.md')]);
     expect(s.primary).toBeNull();
-    expect(s.alternatives).toEqual([]);
     expect(s.companions.size).toBe(2);
   });
 
@@ -187,10 +186,10 @@ describe('selectPrimary', () => {
     expect(selectPrimary([...files].reverse()).primary?.path).toBe('a.stl');
   });
 
-  it('offers the losers as alternatives without duplicating the primary', () => {
+  it('files the losing candidates as companions, never as the primary', () => {
     const s = selectPrimary([dropped('a.stl'), dropped('b.ply'), dropped('c.step')]);
     expect(s.primary?.path).toBe('a.stl');
-    expect(s.alternatives.map((f) => f.path)).toEqual(['b.ply', 'c.step']);
     expect(s.companions.has('a.stl')).toBe(false);
+    expect([...s.companions.keys()].sort()).toEqual(['b.ply', 'c.step']);
   });
 });

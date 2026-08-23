@@ -4,6 +4,7 @@ import { EmptyState } from './components/EmptyState';
 import { StatusBar } from './components/StatusBar';
 import { Viewer } from './components/Viewer';
 import { ViewToolbar } from './components/ViewToolbar';
+import { useHotkeys } from './hooks/useHotkeys';
 import { useModelLoader } from './hooks/useModelLoader';
 import { usePrefersReducedMotion } from './hooks/usePrefersReducedMotion';
 import { useWindowDrop } from './hooks/useWindowDrop';
@@ -25,6 +26,14 @@ export function App() {
 
   const { model, busy, error, pendingLarge, open, dismissError } = useModelLoader();
   const dragging = useWindowDrop({ onFiles: open, disabled: busy !== null });
+
+  useHotkeys(
+    useCallback((action) => {
+      if (action.kind === 'fit') apiRef.current?.fit();
+      else apiRef.current?.applyView(action.view);
+    }, []),
+    model !== null,
+  );
 
   const openSample = useCallback(
     (id: string) => {
