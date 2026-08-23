@@ -72,7 +72,13 @@ export function App() {
     (id: string) => {
       const sample = sampleById(id);
       void sampleBytes(sample).then((bytes) => {
-        open([{ path: sample.fileName, file: new File([bytes], sample.fileName) }]);
+        const files = [{ path: sample.fileName, file: new File([bytes], sample.fileName) }];
+        // A sample with sidecars is dropped as the multi-file set it really is, so it goes
+        // through exactly the same companion resolution a folder drop would.
+        for (const [path, companion] of sample.companions?.() ?? []) {
+          files.push({ path, file: new File([companion], path) });
+        }
+        open(files);
       });
     },
     [open],

@@ -131,6 +131,23 @@ def Mesh "box"
   return bytes.buffer.slice(bytes.byteOffset, bytes.byteOffset + bytes.byteLength) as ArrayBuffer;
 }
 
+/**
+ * An OBJ and its MTL. Returned as a pair because the point of the sample is the companion
+ * path: the OBJ is inert grey without it.
+ */
+function objWithMtl(ext: Extents): { obj: ArrayBuffer; mtl: ArrayBuffer } {
+  const c = corners(ext);
+  let o = 'mtllib box.mtl\no box\nusemtl boxmat\n';
+  for (const v of c) o += `v ${v[0]} ${v[1]} ${v[2]}\n`;
+  for (const t of TRIS) o += `f ${t[0] + 1} ${t[1] + 1} ${t[2] + 1}\n`;
+  const mtl = 'newmtl boxmat\nKd 0.80 0.35 0.20\nKs 0.10 0.10 0.10\nNs 32.0\nd 1.0\nillum 2\n';
+  const bytes = (text: string) => {
+    const b = enc.encode(text);
+    return b.buffer.slice(b.byteOffset, b.byteOffset + b.byteLength) as ArrayBuffer;
+  };
+  return { obj: bytes(o), mtl: bytes(mtl) };
+}
+
 export interface SampleModel {
   readonly id: string;
   /** Shown in the picker. */
@@ -144,6 +161,8 @@ export interface SampleModel {
    * Same-origin, so the app still makes no external request.
    */
   readonly url?: string;
+  /** Sidecars this sample needs, keyed by the path the primary references. */
+  companions?(): Map<string, ArrayBuffer>;
 }
 
 /** Resolve a sample to bytes, whether it is generated or served. */
@@ -201,6 +220,13 @@ export const SAMPLES: readonly SampleModel[] = [
     label: 'Box, USD stage in millimetres, Z-up',
     fileName: 'sample-box.usda',
     bytes: () => usda(0.001, 'Z'),
+  },
+  {
+    id: 'obj',
+    label: 'Box, OBJ with a companion MTL',
+    fileName: 'sample-box.obj',
+    bytes: () => objWithMtl(extentsIn('millimeter')).obj,
+    companions: () => new Map([['box.mtl', objWithMtl(extentsIn('millimeter')).mtl]]),
   },
   {
     id: 'step',

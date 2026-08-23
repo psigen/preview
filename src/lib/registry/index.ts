@@ -1,5 +1,6 @@
 import { gltfDescriptor } from '../formats/gltf/descriptor';
 import { igesDescriptor } from '../formats/iges/descriptor';
+import { objDescriptor } from '../formats/obj/descriptor';
 import { plyDescriptor } from '../formats/ply/descriptor';
 import { stepDescriptor } from '../formats/step/descriptor';
 import { stlDescriptor } from '../formats/stl/descriptor';
@@ -28,6 +29,7 @@ const CAD_DESCRIPTORS: FormatDescriptor[] = [stepDescriptor, igesDescriptor];
 export const registry = createRegistry([
   usdDescriptor,
   gltfDescriptor,
+  objDescriptor,
   stlDescriptor,
   plyDescriptor,
   ...(cadEnabled ? CAD_DESCRIPTORS : []),

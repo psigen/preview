@@ -231,6 +231,28 @@ export const CASES: readonly FormatCase[] = [
     expectWarnings: [],
   },
   unitlessMesh({
+    name: 'OBJ without materials',
+    format: 'obj',
+    fileName: 'box.obj',
+    bytes: () => W.objMtl(mm).obj,
+    // The `v`/`f` shape is suggestive, not decisive, so a renamed OBJ is not expected.
+    strongSniff: false,
+    // The .mtl it names is absent, which is a warning rather than a failure.
+    expectWarnings: ['missing-companion', 'units-unknown', 'up-axis-unknown'],
+  }),
+  unitlessMesh({
+    name: 'OBJ with its MTL',
+    format: 'obj',
+    fileName: 'box.obj',
+    bytes: () => W.objMtl(mm).obj,
+    companions: () => {
+      const { mtl, mtlName } = W.objMtl(mm);
+      return new Map([[mtlName, mtl]]);
+    },
+    strongSniff: false,
+    expectWarnings: ['units-unknown', 'up-axis-unknown'],
+  }),
+  unitlessMesh({
     name: 'STL ascii',
     format: 'stl',
     fileName: 'box-ascii.stl',

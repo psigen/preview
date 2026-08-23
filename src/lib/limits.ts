@@ -25,6 +25,15 @@ export const LIMITS = Object.freeze({
   /** A BVH costs roughly 30-40 bytes per triangle; 8M is already ~300 MB of tree. */
   bvhMaxTriangles: 8_000_000,
 
+  /**
+   * Total bytes of sidecar files read into memory for one load.
+   *
+   * Companions are read eagerly because the loaders want their contents, but a dropped
+   * folder can carry hundreds of megabytes of textures. Past this the remainder is skipped
+   * with a warning rather than exhausting the tab trying to be complete.
+   */
+  companionBudgetBytes: 256 * 1024 * 1024,
+
   maxMeasurements: 200,
   /** Snap radius, in screen pixels, so snapping feels the same at every zoom level. */
   snapPx: 12,

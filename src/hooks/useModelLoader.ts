@@ -1,9 +1,9 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import type { LoadedModel } from '../lib/asset/types';
 import { selectPrimary, type DroppedFile } from '../lib/dnd';
-import { assessFileSize } from '../lib/limits';
+import { assessFileSize, LIMITS } from '../lib/limits';
 import { loadAsset } from '../lib/load/loadAsset';
-import type { LoadInput } from '../lib/registry/types';
+import type { AssetFile, LoadInput } from '../lib/registry/types';
 import { acceptAttribute } from '../lib/detect/detect';
 
 export interface PendingLarge {
@@ -49,7 +49,11 @@ export function useModelLoader(): ModelLoaderState {
     [],
   );
 
-  const run = useCallback(async (primary: DroppedFile, notice: string | null) => {
+  const run = useCallback(async (
+    primary: DroppedFile,
+    siblings: ReadonlyMap<string, DroppedFile>,
+    notice: string | null,
+  ) => {
     const token = ++requestRef.current;
     setBusy(`Reading ${primary.file.name}…`);
     // `notice` survives the reset: a partial folder scan still loads, and the caveat is the
@@ -61,13 +65,30 @@ export function useModelLoader(): ModelLoaderState {
       const bytes = await primary.file.arrayBuffer();
       if (requestRef.current !== token) return;
 
+      // Sidecars: a .gltf needs its .bin, an OBJ needs its .mtl, and both need textures.
+      // Read up to a budget rather than unconditionally, because a dropped folder can carry
+      // far more than the model itself.
+      const companions = new Map<string, AssetFile>();
+      let companionBytes = 0;
+      let skipped = 0;
+      for (const [path, sibling] of siblings) {
+        if (companionBytes + sibling.file.size > LIMITS.companionBudgetBytes) {
+          skipped += 1;
+          continue;
+        }
+        companionBytes += sibling.file.size;
+        companions.set(path, { name: path, path, bytes: await sibling.file.arrayBuffer() });
+      }
+      if (requestRef.current !== token) return;
+
       const input: LoadInput = {
         primary: { name: primary.path, path: primary.path, bytes },
-        // Sidecar resolution lands with the first format that needs it; no format supported
-        // today reads companions, and eagerly slurping a dropped folder's textures would
-        // cost hundreds of megabytes for nothing.
-        companions: new Map(),
+        companions,
       };
+
+      if (skipped > 0) {
+        setError(`${skipped} companion file(s) were too large to read and were skipped.`);
+      }
 
       const next = await loadAsset(input, {
         onProgress: (phase) => {
@@ -95,7 +116,7 @@ export function useModelLoader(): ModelLoaderState {
 
   const open = useCallback(
     (files: readonly DroppedFile[], truncated = false) => {
-      const { primary } = selectPrimary(files);
+      const { primary, companions } = selectPrimary(files);
 
       if (!primary) {
         const names = files.slice(0, 3).map((f) => f.path).join(', ');
@@ -119,13 +140,13 @@ export function useModelLoader(): ModelLoaderState {
       if (tooBig && message) {
         setPendingLarge({
           message,
-          confirm: () => void run(primary, notice),
+          confirm: () => void run(primary, companions, notice),
           cancel: () => setPendingLarge(null),
         });
         return;
       }
 
-      void run(primary, notice);
+      void run(primary, companions, notice);
     },
     [run],
   );

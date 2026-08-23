@@ -247,6 +247,34 @@ try {
   // 10 x 20 x 30 mm, upright, the same as every other format of the same box.
   check('USD converts its stage units and up-axis', /^10\.000 × 20\.000 × 30\.000 mm$/.test(usdDims), usdDims);
 
+  // OBJ, whose materials live in a separate .mtl. Loading the sample drops both files, so
+  // this exercises the same companion resolution a folder drop uses.
+  await reload();
+  await click('[data-sample="obj"]');
+  await waitFor(`!!document.querySelector('[data-view="iso"]')`, 120);
+  await click('[data-view="iso"]');
+  const objFrame = await shot();
+  check('an OBJ sample loads and renders', inkPct(objFrame) > 2, `${inkPct(objFrame).toFixed(1)}% ink`);
+  check('OBJ reports 12 triangles', (await statOf('triangles')) === '12');
+  // No missing-companion warning means the .mtl really was found through the drop.
+  const objWarnings = await evalJs(
+    `[...document.querySelectorAll('.warning-list li')].map(e => e.textContent).join(' | ')`);
+  check('the companion .mtl was resolved', !/not included/i.test(objWarnings), objWarnings || '(none)');
+  // OBJ declares no units, so the ruler must not invent any.
+  const objDims = await statOf('dimensions');
+  check('OBJ reports abstract units', / u$/.test(objDims), objDims);
+
+  // Resolving the .mtl is only half of it — the material has to reach the renderer. The
+  // same box in the same view, shaded by Kd 0.80 0.35 0.20 rather than the default grey,
+  // must look substantially different.
+  await reload();
+  await click('[data-sample="stl-mm"]');
+  await waitFor(`!!document.querySelector('[data-view="iso"]')`);
+  await click('[data-view="iso"]');
+  const greyFrame = await shot();
+  const objVsGrey = diffPct(objFrame, greyFrame);
+  check('the MTL colour reaches the renderer', objVsGrey > 5, `${objVsGrey.toFixed(1)}% of pixels differ from the default grey`);
+
   // A STEP solid: the stretch goal, and the case where the ruler finally reports a real
   // physical length from a CAD file rather than from a format that merely mandates metres.
   await reload();
