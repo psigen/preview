@@ -13,6 +13,7 @@ npm run dev          # vite dev server on 5173
 npm test             # vitest: the 'lib' (node) and 'dom' (jsdom) projects — the CI gate
 npm run test:browser # optional tier: DRACO, KTX2, real workers, WebGL
 npm run lint         # eslint + scripts/check-no-network.mjs
+npm run verify:viewer # end-to-end camera checks in headless Chrome (needs dist/)
 npm run build        # prebuild --check, then tsc && vite build
 npm run preview      # serve dist/ on 4173
 npm run stage-wasm   # re-run the decoder staging by hand
@@ -77,6 +78,23 @@ only `FormatId` with the loader registry. Two subtleties worth knowing:
 - `BINARY_SNIFF_BYTES` in `probe.ts` must stay `>= 84`. A binary STL's triangle-count field at
   offsets 80..83 always contains a NUL, which is what stops its literal `solid ...` header from
   being read as an ASCII STL. There is a regression test pinning this.
+
+## Two camera-controls traps
+
+Both were found by `npm run verify:viewer` after all unit tests passed, and both are the
+kind of thing only an end-to-end check can see.
+
+**`getPosition()` / `getTarget()` default `receiveEndValue` to TRUE**, returning the
+DESTINATION of an in-flight transition rather than where the camera is. Always pass `false`.
+Reading the default computed the depth range for a place the camera had not reached — which
+clips the model for the whole flight — and flipped a view button's `aria-pressed` the moment
+a move started instead of when it arrived.
+
+**`frameloop="demand"` plus time-based damping collapses transitions after an idle.** The
+clock keeps running between frames, so the first frame after a pause hands `useFrame` a
+multi-second delta, and `smoothDamp` lands on the target in a single step. A move measured
+at 399 ms warm became 53 ms after 1.8 s idle. `CameraRig` consumes the stale delta before
+starting any tween; do not remove that call.
 
 ## Deploy
 

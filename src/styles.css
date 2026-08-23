@@ -295,3 +295,33 @@ progress {
   display: grid;
   gap: 6px;
 }
+
+/* ---- view toolbar -------------------------------------------------------- */
+
+.view-toolbar {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 8px;
+}
+
+.view-toolbar .seg button {
+  min-width: 74px;
+  padding: 6px 10px;
+  font-size: 13px;
+}
+
+.fit-button {
+  padding: 6px 10px;
+  font-size: 13px;
+}
+
+.sample-picker {
+  margin-top: 8px;
+}
+
+.sample-picker button {
+  padding: 4px 10px;
+  font-size: 12px;
+  text-transform: uppercase;
+}

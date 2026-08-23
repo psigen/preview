@@ -26,9 +26,11 @@ and the format-detection library; the viewer, loader plugins and ruler are still
 | Format detection (`src/lib/detect/`) | done |
 | Units, camera and budget maths (`src/lib/`) | done |
 | Asset contract: payload, orientation, stats, bounds, disposal | done |
-| Viewer, loader plugins, measurement ruler | not yet |
+| Viewer: camera, standard views, lighting | done |
+| Loader plugins, drag-and-drop, measurement ruler | not yet |
 
-245 tests currently pass, all headless.
+245 unit tests pass headless, plus a 16-check end-to-end viewer verification
+(`npm run verify:viewer`) that drives the real UI in headless Chrome.
 
 The feature list above describes the target. Nothing in it is wired up yet.
 
@@ -60,6 +62,7 @@ Running the checks:
 npm test             # vitest, the CI gate — every format's parse path, headless
 npm run test:browser # optional tier: Draco, KTX2, real workers, WebGL
 npm run lint         # eslint + the no-network guard
+npm run verify:viewer # end-to-end camera checks in headless Chrome (needs a built dist/)
 ```
 
 ## Supported formats
@@ -114,7 +117,8 @@ whichever way the model is oriented.
 
 Once loaded, the app makes no requests. Fonts are system fonts, lighting is procedural, and every
 decoder is served from the same origin. This is enforced mechanically — an eslint rule bans the
-drei APIs that reach for a CDN, and `scripts/check-no-network.mjs` fails the build on a stray URL
+drei APIs that reach for a CDN, and `scripts/check-no-network.mjs
+scripts/verify-viewer.mjs   # end-to-end camera checks driven through CDP` fails the build on a stray URL
 in `src/`.
 
 The Open CASCADE wasm is 7.6 MB and lives in `public/vendor/`, so it is fetched **only** the first
@@ -164,11 +168,14 @@ src/
   lib/vec3.ts          # tuple vector maths shared by camera, bounds and measurement
   lib/limits.ts        # size/complexity budgets and the degradation they drive
   lib/format-id.ts     # the shared format vocabulary
+  components/          # Viewer, CameraRig, SceneEnvironment, ModelRoot, ViewToolbar
+  hooks/               # useRoomEnvironment, usePrefersReducedMotion
   App.tsx, main.tsx    # app shell and hash routing
   styles.css           # one global stylesheet, tokens shared with videoclip
 test/gen/              # in-memory fixture writers for the canonical 10x20x30 mm box
 scripts/copy-wasm.mjs  # stages Draco / Basis / OCCT into public/vendor on install
 scripts/check-no-network.mjs
+scripts/verify-viewer.mjs   # end-to-end camera checks driven through CDP
 docs/SPIKES.md         # what was verified before the architecture was committed to
 ```
 

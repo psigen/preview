@@ -42,6 +42,19 @@ export default tseslint.config(
     },
   },
   {
+    // react-hooks/immutability assumes a value returned from a hook is React data. In
+    // react-three-fiber it is a three.js scene object, and mutating it IS the programming
+    // model: the renderer reads camera.near, material.side and object.position directly.
+    //
+    // The declarative alternative — driving near/far through React state — would re-render
+    // the tree on every frame of an orbit, which is precisely what this app is built to
+    // avoid (frameloop="demand", zero renders during pointer motion). So the rule is a
+    // false positive for the whole R3F layer, and only for that layer: it stays on for
+    // src/lib and anything else.
+    files: ['src/components/**/*.tsx', 'src/hooks/**/*.ts'],
+    rules: { 'react-hooks/immutability': 'off' },
+  },
+  {
     // lib/ is the pure layer: no React, no JSX, so it stays testable in plain Node.
     files: ['src/lib/**/*.ts'],
     rules: {
