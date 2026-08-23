@@ -20,6 +20,8 @@ export interface ModelLoaderState {
   /** Set when a file is large enough that opening it might kill the tab. */
   readonly pendingLarge: PendingLarge | null;
   open(files: readonly DroppedFile[], truncated?: boolean): void;
+  /** Unload the current model and return to the empty state. */
+  clear(): void;
   dismissError(): void;
 }
 
@@ -157,7 +159,20 @@ export function useModelLoader(): ModelLoaderState {
     [run],
   );
 
+  const clear = useCallback(() => {
+    // Bump the token first: a load still in flight must not resolve after the user has
+    // already gone back, or the model they dismissed reappears.
+    requestRef.current += 1;
+    const previous = currentRef.current;
+    currentRef.current = null;
+    setModel(null);
+    setBusy(null);
+    setError(null);
+    setPendingLarge(null);
+    previous?.dispose();
+  }, []);
+
   const dismissError = useCallback(() => setError(null), []);
 
-  return { model, busy, error, pendingLarge, open, dismissError };
+  return { model, busy, error, pendingLarge, open, clear, dismissError };
 }

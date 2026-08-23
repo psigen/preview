@@ -11,9 +11,7 @@ import { usePrefersReducedMotion } from './hooks/usePrefersReducedMotion';
 import { useWindowDrop } from './hooks/useWindowDrop';
 import { computeBounds } from './lib/bounds';
 import type { ViewId } from './lib/camera';
-import { acceptAttribute } from './lib/detect/detect';
 import type { DroppedFile } from './lib/dnd';
-import { filesFromList } from './lib/dropEntries';
 import { assessModel } from './lib/limits';
 import { initialMeasureState, measureReducer, sphereAround } from './lib/measure';
 import { sampleById, sampleBytes } from './lib/samples';
@@ -23,13 +21,12 @@ import type { ViewApi } from './types';
 export function App() {
   const [activeView, setActiveView] = useState<ViewId | null>(null);
   const apiRef = useRef<ViewApi | null>(null);
-  const replaceInput = useRef<HTMLInputElement>(null);
   const reduceMotion = usePrefersReducedMotion();
 
   const [measure, dispatchMeasure] = useReducer(measureReducer, initialMeasureState);
   const [unit, setUnit] = useState<UnitChoice>('auto');
 
-  const { model, busy, error, pendingLarge, open, dismissError } = useModelLoader();
+  const { model, busy, error, pendingLarge, open, clear, dismissError } = useModelLoader();
   const dragging = useWindowDrop({ onFiles: open, disabled: busy !== null });
 
   useHotkeys(
@@ -130,35 +127,20 @@ export function App() {
         <>
           <div className="hud hud-top-left">
             <div className="panel-glass pad">
-              <strong>preview</strong>
+              {/*
+                Back to the empty state, where the file picker and the samples live.
+                Dropping a file over the viewer still replaces the model in place; this is
+                for choosing one deliberately rather than by dragging.
+              */}
+              <button type="button" className="back-button" data-action="back" onClick={clear}>
+                ← Open another model
+              </button>
               <p className="filename" title={model.name}>
                 {model.name}
               </p>
-              {/* Replacing a model never goes through the empty state: the window-wide drop
-                  target is armed whenever nothing is loading, and this is its click twin. */}
               <a className="about-link" href="#/about">
                 About &amp; licences
               </a>
-              <button
-                type="button"
-                className="link"
-                data-action="replace"
-                onClick={() => replaceInput.current?.click()}
-              >
-                Open another…
-              </button>
-              <input
-                ref={replaceInput}
-                type="file"
-                hidden
-                multiple
-                accept={acceptAttribute()}
-                onChange={(e) => {
-                  const list = e.target.files;
-                  if (list?.length) open(filesFromList(list));
-                  e.target.value = '';
-                }}
-              />
             </div>
           </div>
 

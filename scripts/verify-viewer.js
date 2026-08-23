@@ -556,6 +556,35 @@ try {
     !(await evalJs(`!!document.querySelector('.empty-state')`)),
   );
 
+  // Going back to the empty state, and loading something else from there.
+  check(
+    'the back button is offered once a model is open',
+    await evalJs(`!!document.querySelector('[data-action="back"]')`),
+  );
+  await click('[data-action="back"]');
+  check(
+    'back returns to the empty state',
+    await evalJs(`!!document.querySelector('.empty-state')`),
+  );
+  check(
+    'the viewer is gone with it',
+    !(await evalJs(`!!document.querySelector('[data-view="iso"]')`)),
+  );
+  await click('[data-sample="ply"]');
+  await waitFor(`!!document.querySelector('[data-view="iso"]')`);
+  check(
+    'a different model can be chosen after going back',
+    (await evalJs(`document.querySelector('.filename')?.textContent ?? ''`)).includes('.ply'),
+  );
+
+  // Dropping must still replace in place, without a detour through the empty state.
+  await dispatchDrag(['Files'], ['dragenter', 'dragover', 'drop'], 'after-back.stl', stlAscii);
+  const replaced = await waitFor(
+    `(document.querySelector('.filename')?.textContent ?? '').includes('after-back.stl')`,
+    40,
+  );
+  check('dropping still replaces in place after going back', replaced);
+
   // An unrecognised file must explain itself rather than fail silently.
   await dispatchDrag(
     ['Files'],
