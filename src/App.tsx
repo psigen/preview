@@ -1,6 +1,7 @@
-import { useCallback, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useReducer, useRef, useState } from 'react';
 import { DropOverlay } from './components/DropOverlay';
 import { EmptyState } from './components/EmptyState';
+import { MeasurePanel } from './components/MeasurePanel';
 import { StatusBar } from './components/StatusBar';
 import { Viewer } from './components/Viewer';
 import { ViewToolbar } from './components/ViewToolbar';
@@ -14,8 +15,9 @@ import { acceptAttribute } from './lib/detect/detect';
 import type { DroppedFile } from './lib/dnd';
 import { filesFromList } from './lib/dropEntries';
 import { assessModel } from './lib/limits';
+import { initialMeasureState, measureReducer, sphereAround } from './lib/measure';
 import { sampleById } from './lib/samples';
-import { formatDims, formatLength } from './lib/units';
+import { formatDims, formatLength, type UnitChoice } from './lib/units';
 import type { ViewApi } from './types';
 
 export function App() {
@@ -23,6 +25,9 @@ export function App() {
   const apiRef = useRef<ViewApi | null>(null);
   const replaceInput = useRef<HTMLInputElement>(null);
   const reduceMotion = usePrefersReducedMotion();
+
+  const [measure, dispatchMeasure] = useReducer(measureReducer, initialMeasureState);
+  const [unit, setUnit] = useState<UnitChoice>('auto');
 
   const { model, busy, error, pendingLarge, open, dismissError } = useModelLoader();
   const dragging = useWindowDrop({ onFiles: open, disabled: busy !== null });
@@ -33,6 +38,34 @@ export function App() {
       else apiRef.current?.applyView(action.view);
     }, []),
     model !== null,
+  );
+
+  // A measurement is a pair of world-space points, meaningless against different geometry.
+  useEffect(() => {
+    dispatchMeasure({ type: 'reset' });
+  }, [model]);
+
+  // Escape is a ladder: abandon the half-finished measurement first, then the selection,
+  // then leave the tool. Anything else throws away more than the user asked to.
+  useEffect(() => {
+    const onKey = (event: KeyboardEvent) => {
+      if (event.key !== 'Escape') return;
+      if (measure.draft.phase === 'first') dispatchMeasure({ type: 'cancelDraft' });
+      else if (measure.selectedId !== null) dispatchMeasure({ type: 'select', id: null });
+      else if (measure.mode !== 'off') dispatchMeasure({ type: 'setMode', mode: 'off' });
+    };
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, [measure.draft.phase, measure.selectedId, measure.mode]);
+
+  const zoomToMeasurement = useCallback(
+    (id: number) => {
+      const m = measure.items.find((x) => x.id === id);
+      if (!m) return;
+      const s = sphereAround(m.a.p, m.b.p);
+      apiRef.current?.fitSphere(s.center, s.radius);
+    },
+    [measure.items],
   );
 
   const openSample = useCallback(
@@ -74,6 +107,10 @@ export function App() {
           apiRef={apiRef}
           onActiveViewChange={setActiveView}
           reduceMotion={reduceMotion}
+          measure={measure}
+          dispatchMeasure={dispatchMeasure}
+          unit={unit}
+          system="metric"
         />
       )}
 
@@ -119,6 +156,15 @@ export function App() {
           </div>
 
           <div className="hud hud-right">
+            <MeasurePanel
+              state={measure}
+              dispatch={dispatchMeasure}
+              metersPerUnit={mpu}
+              unit={unit}
+              system="metric"
+              onUnitChange={setUnit}
+              onZoomTo={zoomToMeasurement}
+            />
             <section className="panel-glass pad" aria-label="Model information">
               <dl className="stat-list">
                 {rows.map(([key, value]) => (

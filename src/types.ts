@@ -10,4 +10,6 @@ export interface ViewApi {
   applyView(view: ViewId, animate?: boolean): void;
   /** Re-frame the model without changing the viewing direction. */
   fit(animate?: boolean): void;
+  /** Frame an arbitrary sphere — used to zoom to a single measurement. */
+  fitSphere(center: readonly [number, number, number], radius: number, animate?: boolean): void;
 }

@@ -30,10 +30,11 @@ and the format-detection library; the viewer, loader plugins and ruler are still
 | Format registry and bundled samples | done |
 | **USD, glTF/GLB, STL, PLY** | done |
 | Drag-and-drop, folder drop, in-place replacement | done |
-| OBJ, 3MF, FBX, STEP/IGES; measurement ruler | not yet |
+| **Measurement ruler** | done |
+| OBJ, 3MF, FBX, STEP/IGES | not yet |
 
-474 unit tests pass headless across a Node tier and a jsdom tier, plus a
-37-check end-to-end verification (`npm run verify:viewer`) that drives the real
+492 unit tests pass headless across a Node tier and a jsdom tier, plus a
+43-check end-to-end verification (`npm run verify:viewer`) that drives the real
 UI in headless Chrome, including a calibrated geometry-leak check.
 
 The four must-have formats all load. A 10 × 20 × 30 mm box reads identically whether it
@@ -114,6 +115,9 @@ invent one when it doesn't:
 | --- | --- |
 | USD `metersPerUnit`, glTF metres, a STEP/IGES unit, a 3MF `unit` | `124.53 mm` — real, converted |
 | Nothing (STL, PLY, OBJ, FBX) | `37.417 u` — abstract, with no assumed scale |
+
+Verified end to end: the same two clicks on a USD stage authored in millimetres report
+`6.631 mm`, and on an STL report `6.8052 u`.
 
 A model is never rescaled to fit the view; the camera fits to the model instead. Up-axis
 correction is a rotation, which cannot change a distance, so a measurement reads the same

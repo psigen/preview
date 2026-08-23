@@ -103,13 +103,25 @@ export function CameraRig({ bounds, apiRef, onActiveViewChange, reduceMotion = f
     [fitSphere, invalidate, reduceMotion, resetFrameClock],
   );
 
+  const fitSphereAt = useCallback(
+    (center: readonly [number, number, number], radius: number, animate = !reduceMotion) => {
+      const controls = controlsRef.current;
+      if (!controls) return;
+      if (animate) resetFrameClock();
+      const target = new Sphere(new Vector3(center[0], center[1], center[2]), Math.max(radius, 1e-6));
+      void controls.fitToSphere(target, animate);
+      invalidate();
+    },
+    [invalidate, reduceMotion, resetFrameClock],
+  );
+
   // Publish the imperative handle for the DOM toolbar outside the Canvas.
   useEffect(() => {
-    apiRef.current = { applyView, fit };
+    apiRef.current = { applyView, fit, fitSphere: fitSphereAt };
     return () => {
       apiRef.current = null;
     };
-  }, [apiRef, applyView, fit]);
+  }, [apiRef, applyView, fit, fitSphereAt]);
 
   // Frame each new model, and keep the dolly limits proportional to it.
   useEffect(() => {

@@ -5,7 +5,10 @@ import type { LoadedModel } from '../lib/asset/types';
 import type { ModelBounds } from '../lib/bounds';
 import type { ViewId } from '../lib/camera';
 import type { ViewApi } from '../types';
+import type { MeasureAction, MeasureState } from '../lib/measure';
+import type { UnitChoice, UnitSystem } from '../lib/units';
 import { CameraRig } from './CameraRig';
+import { MeasureController } from './MeasureController';
 import { ModelRoot } from './ModelRoot';
 import { OrientationGizmo } from './OrientationGizmo';
 import { SceneEnvironment } from './SceneEnvironment';
@@ -16,9 +19,15 @@ interface Props {
   apiRef: React.RefObject<ViewApi | null>;
   onActiveViewChange?: (view: ViewId | null) => void;
   reduceMotion?: boolean;
+  measure: MeasureState;
+  dispatchMeasure(action: MeasureAction): void;
+  unit: UnitChoice;
+  system: UnitSystem;
 }
 
-export function Viewer({ model, bounds, apiRef, onActiveViewChange, reduceMotion }: Props) {
+export function Viewer({
+  model, bounds, apiRef, onActiveViewChange, reduceMotion, measure, dispatchMeasure, unit, system,
+}: Props) {
   return (
     <Canvas
       className="viewer-canvas"
@@ -52,6 +61,14 @@ export function Viewer({ model, bounds, apiRef, onActiveViewChange, reduceMotion
     >
       <SceneEnvironment target={bounds.sphere.center} />
       <ModelRoot key={model.id} model={model} />
+      <MeasureController
+        root={model.object}
+        state={measure}
+        dispatch={dispatchMeasure}
+        metersPerUnit={model.units.known ? model.units.metersPerUnit : null}
+        unit={unit}
+        system={system}
+      />
       <CameraRig
         bounds={bounds}
         apiRef={apiRef}

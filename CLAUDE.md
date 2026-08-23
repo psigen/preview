@@ -94,6 +94,23 @@ must not touch the DOM, so it can run in a worker; `scene` returns an Object3D o
 thread and may use the DOM. Every format that needs textures, DOMParser or `window` has to
 be `scene`.
 
+## The ruler renders without re-rendering
+
+The live hover point lives in a REF, never in state, and the ghost marker and dashed line
+are positioned imperatively inside a single `useFrame`. Moving the pointer across a model
+therefore costs zero React renders; React only commits when a measurement is created,
+deleted, cleared or selected. Putting the hover point in state would re-render the whole
+scene graph at pointer rate to move one sphere.
+
+Picking uses a manual `Raycaster`, not R3F's event system: objects join its interaction list
+merely by having any handler, so an `onClick` on the model would raycast on every
+`pointermove` whether or not hover was wanted.
+
+Annotations are deliberately depth-independent (`depthTest: false`, drawn last). That is not
+a workaround — CAD dimension annotations behave this way everywhere, a measurement whose far
+endpoint sits inside the part is still one you need to read, and it avoids z-fighting between
+a marker and the surface it rests on.
+
 ## USD stage metadata is read back off the transform
 
 `USDComposer` applies the stage's `metersPerUnit` to the root scale and its Z-up rotation to

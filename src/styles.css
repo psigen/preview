@@ -461,3 +461,110 @@ progress {
   text-overflow: ellipsis;
   white-space: nowrap;
 }
+
+/* ---- measurement --------------------------------------------------------- */
+
+.measure-panel {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.measure-head {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+
+.measure-head button {
+  padding: 5px 12px;
+  font-size: 13px;
+}
+
+.measure-unit select {
+  background: var(--panel-2);
+  color: var(--text);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: 5px 6px;
+  font: inherit;
+  font-size: 13px;
+}
+
+.measure-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 2px;
+  max-height: 40vh;
+  overflow-y: auto;
+}
+
+.measure-list li {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  align-items: center;
+  gap: 4px;
+}
+
+.measure-row {
+  display: flex;
+  justify-content: space-between;
+  gap: 10px;
+  width: 100%;
+  padding: 4px 8px;
+  font-size: 13px;
+  text-align: left;
+  background: none;
+  border: 1px solid transparent;
+  border-left: 2px solid transparent;
+  border-radius: var(--radius-sm);
+}
+
+.measure-row.selected {
+  /* Never colour alone: a left bar, a background, and aria-pressed all carry the state. */
+  border-left-color: var(--good);
+  background: var(--panel-2);
+}
+
+.measure-value {
+  font-variant-numeric: tabular-nums;
+}
+
+.measure-snap {
+  color: var(--muted);
+  letter-spacing: 2px;
+}
+
+.measure-actions {
+  display: flex;
+  gap: 0;
+}
+
+.measure-detail {
+  grid-column: 1 / -1;
+  padding: 2px 10px 6px;
+  font-size: 12px;
+}
+
+/* The in-scene label. A real button so it is clickable and focusable. */
+.measure-label {
+  padding: 2px 7px;
+  font-size: 12px;
+  line-height: 1.4;
+  white-space: nowrap;
+  user-select: none;
+  color: var(--text);
+  background: var(--panel-glass);
+  -webkit-backdrop-filter: blur(4px);
+  backdrop-filter: blur(4px);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  font-variant-numeric: tabular-nums;
+}
+
+.measure-label.selected {
+  border-color: var(--good);
+  color: var(--good);
+}

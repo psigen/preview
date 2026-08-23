@@ -420,6 +420,69 @@ try {
   const afterFive = await shot();
   check('five sequential loads all succeed and still render', inkPct(afterFive) > 1,
     `${inkPct(afterFive).toFixed(1)}% ink`);
+  // 8. The measurement ruler. The requirement is explicitly that it reports REAL units for
+  //    a format that declares them and ABSTRACT units for one that does not, so both are
+  //    checked, on the same physical box.
+  const clickCanvas = (dx, dy) => evalJs(`(() => {
+    const c = document.querySelector('canvas');
+    const r = c.getBoundingClientRect();
+    const x = r.left + r.width / 2 + ${dx};
+    const y = r.top + r.height / 2 + ${dy};
+    const opts = { clientX: x, clientY: y, bubbles: true, cancelable: true,
+                   pointerId: 1, pointerType: 'mouse', button: 0, isPrimary: true };
+    c.dispatchEvent(new PointerEvent('pointerdown', opts));
+    c.dispatchEvent(new PointerEvent('pointerup', opts));
+    return true;
+  })()`);
+  const rows = () => evalJs(
+    `[...document.querySelectorAll('[data-measure-row]')].map(b => b.querySelector('.measure-value').textContent)`);
+
+  const measureOn = async (sample) => {
+    await reload();
+    await click(`[data-sample="${sample}"]`);
+    await waitFor(`!!document.querySelector('[data-view="iso"]')`);
+    await click('[data-view="iso"]');
+    await click('[data-action="measure-toggle"]');
+    await clickCanvas(-30, 10);
+    await wait(250);
+    await clickCanvas(40, -20);
+    await waitFor(`document.querySelectorAll('[data-measure-row]').length === 1`, 30);
+    return (await rows())[0] ?? '';
+  };
+
+  // A USD stage declares millimetres, so the ruler must report a real length.
+  const usdValue = await measureOn('usda');
+  check('measuring a USD model reports real units', /^[\d.]+\s*(mm|cm|m)$/.test(usdValue), usdValue);
+  const usdNumber = parseFloat(usdValue);
+  check('the USD measurement is inside the model', usdNumber > 0 && usdNumber <= 40, `${usdNumber}`);
+
+  // STL declares nothing, so the same click must give a bare number, never an invented unit.
+  const stlValue = await measureOn('stl-mm');
+  check('measuring an STL reports abstract units', /^[\d.]+\s*u$/.test(stlValue), stlValue);
+
+  // Deterministic correctness: two clicks at the SAME screen point must measure exactly
+  // zero. A plausible-looking number proves the plumbing runs; this proves it is right.
+  await evalJs(`document.querySelector('[data-measure-delete]')?.click()`);
+  await wait(250);
+  await clickCanvas(12, -8);
+  await wait(250);
+  await clickCanvas(12, -8);
+  await waitFor(`document.querySelectorAll('[data-measure-row]').length === 1`, 30);
+  const zero = (await rows())[0] ?? '';
+  check('measuring one point against itself gives exactly zero', parseFloat(zero) === 0, zero);
+
+  // Deleting, and the Escape ladder.
+  await evalJs(`document.querySelector('[data-measure-delete]')?.click()`);
+  await wait(300);
+  check('a measurement can be deleted', (await rows()).length === 0);
+
+  await clickCanvas(-30, 10);
+  await wait(250);
+  await evalJs(`window.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true }))`);
+  await wait(250);
+  await clickCanvas(40, -20);
+  await wait(400);
+  check('Escape abandons a half-finished measurement', (await rows()).length === 0);
 } catch (err) {
   check(`harness error: ${err.message}`, false);
 }
