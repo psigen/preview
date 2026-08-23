@@ -18,11 +18,7 @@ import { vendorUrl } from './assetUrl';
 let cached: OcctModule | null = null;
 let inFlight: Promise<OcctModule> | null = null;
 
-export function isOcctLoaded(): boolean {
-  return cached !== null;
-}
-
-async function fetchWasm(): Promise<ArrayBuffer> {
+export async function fetchOcctWasm(): Promise<ArrayBuffer> {
   const url = vendorUrl('occt/occt-import-js.wasm');
   const response = await fetch(url);
   if (!response.ok) {
@@ -49,7 +45,7 @@ export function loadOcct(wasmBinary?: ArrayBuffer): Promise<OcctModule> {
   inFlight = (async () => {
     const [{ default: occtimportjs }, bytes] = await Promise.all([
       import('occt-import-js'),
-      wasmBinary ? Promise.resolve(wasmBinary) : fetchWasm(),
+      wasmBinary ? Promise.resolve(wasmBinary) : fetchOcctWasm(),
     ]);
     const module = await occtimportjs({
       wasmBinary: bytes,
@@ -66,11 +62,4 @@ export function loadOcct(wasmBinary?: ArrayBuffer): Promise<OcctModule> {
   });
 
   return inFlight;
-}
-
-/** Warm the engine in the background once a CAD file is known to be coming. */
-export function preloadOcct(): void {
-  void loadOcct().catch(() => {
-    /* the real load will surface the error */
-  });
 }

@@ -275,6 +275,53 @@ try {
   const objVsGrey = diffPct(objFrame, greyFrame);
   check('the MTL colour reaches the renderer', objVsGrey > 5, `${objVsGrey.toFixed(1)}% of pixels differ from the default grey`);
 
+  // 8b. The worker must actually be doing the work, and CAD parsing must not add a
+  //     main-thread block. Passing checks prove nothing here if the code silently fell back
+  //     to parsing inline.
+  //
+  //     Measured as the MARGINAL cost over a trivial STL rather than in absolute terms:
+  //     under SwiftShader the first draw compiles shaders for about a second whatever the
+  //     format, so an absolute threshold would measure the software renderer instead of
+  //     anything this project controls.
+  const longestTaskFor = async (sample) => {
+    await reload();
+    await evalJs(`(() => {
+      window.__workers = [];
+      window.__blocked = 0;
+      const Real = window.Worker;
+      window.Worker = function (url, opts) { window.__workers.push(String(url)); return new Real(url, opts); };
+      window.Worker.prototype = Real.prototype;
+      new PerformanceObserver((l) => {
+        for (const e of l.getEntries()) window.__blocked = Math.max(window.__blocked, e.duration);
+      }).observe({ entryTypes: ['longtask'] });
+      return true;
+    })()`);
+    await wait(1500);
+    await evalJs(`window.__blocked = 0`);
+    await click(`[data-sample="${sample}"]`);
+    await waitFor(`!!document.querySelector('[data-view="iso"]')`, 200);
+    await wait(1200);
+    return {
+      blocked: await evalJs(`window.__blocked ?? 0`),
+      workers: await evalJs(`(window.__workers ?? []).join(' | ')`),
+    };
+  };
+
+  const stlRun = await longestTaskFor('stl-mm');
+  const stepRun = await longestTaskFor('step');
+  check(
+    'a STEP load really runs in the parse worker',
+    /parse\.worker/.test(stepRun.workers),
+    stepRun.workers || '(none)',
+  );
+  const marginal = stepRun.blocked - stlRun.blocked;
+  check(
+    'CAD parsing adds no main-thread block of its own',
+    marginal < 250,
+    `STEP ${Math.round(stepRun.blocked)} ms vs STL ${Math.round(stlRun.blocked)} ms — ${Math.round(marginal)} ms marginal`,
+  );
+
+  await reload();
   // A STEP solid: the stretch goal, and the case where the ruler finally reports a real
   // physical length from a CAD file rather than from a format that merely mandates metres.
   await reload();

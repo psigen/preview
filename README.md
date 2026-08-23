@@ -35,8 +35,8 @@ and the format-detection library; the viewer, loader plugins and ruler are still
 | **OBJ + MTL**, and sidecar resolution for multi-file drops | done |
 | 3MF, FBX | not yet |
 
-569 unit tests pass headless across a Node tier and a jsdom tier, plus a
-51-check end-to-end verification (`npm run verify:viewer`) that drives the real
+581 unit tests pass headless across a Node tier and a jsdom tier, plus a
+53-check end-to-end verification (`npm run verify:viewer`) that drives the real
 UI in headless Chrome, including a calibrated geometry-leak check.
 
 The four must-have formats all load. A 10 × 20 × 30 mm box reads identically whether it
@@ -97,7 +97,8 @@ directory — see [CLAUDE.md](CLAUDE.md).
 | Concern | Approach |
 | --- | --- |
 | Mesh parsing | three.js loaders, dynamically imported so nothing unused is in the bundle |
-| CAD tessellation | `occt-import-js` (Open CASCADE → WebAssembly), in a Web Worker |
+| CAD tessellation | `occt-import-js` (Open CASCADE → WebAssembly) |
+| Off-thread parsing | STL, PLY, STEP and IGES run in a Web Worker; the rest need the DOM |
 | Sidecar files | An in-memory companion map hooked into `LoadingManager.setURLModifier` |
 | Rendering | react-three-fiber + three.js, `frameloop="demand"` so an idle viewer costs nothing |
 | Lighting | Procedural `RoomEnvironment` + `PMREMGenerator` — no HDRI download |

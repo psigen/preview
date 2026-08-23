@@ -94,6 +94,25 @@ must not touch the DOM, so it can run in a worker; `scene` returns an Object3D o
 thread and may use the DOM. Every format that needs textures, DOMParser or `window` has to
 be `scene`.
 
+## What can and cannot run in the worker
+
+`src/lib/workers/geometryPipelines.ts` lists the worker-eligible formats, and it is separate
+from the registry on purpose: the worker cannot import the registry without dragging every
+scene loader in with it. A test asserts the two agree, because that duplication is exactly
+the kind that drifts.
+
+Only `geometry` pipelines qualify. Every `scene` format needs the DOM for something — `new
+Image()` in USD's composer, `DOMParser` in 3MF, `window` in FBX, a live renderer for glTF's
+KTX2 — so routing one into a worker fails at runtime rather than at build time.
+
+**Transferring detaches.** `loadAsset` tries detection's candidates in order, so the input
+buffers may still be needed by a later attempt; only the FINAL candidate is allowed to
+transfer, and earlier ones copy. Getting this wrong produces a detached-ArrayBuffer error on
+an ambiguous file and nothing at all on an unambiguous one.
+
+**Cancellation is `terminate()`.** `STLLoader.parse` and `occt.ReadFile` are synchronous
+loops with no yield point, so a signal can only be checked between phases.
+
 ## CAD dimensions are reported as authored
 
 `AssetStats.size` is the world-space bounding box, which is what the camera frames.

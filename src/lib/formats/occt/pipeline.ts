@@ -1,8 +1,8 @@
-import { loadOcct } from "../../decoders/occtWasm";
-import { countsFor } from "../../asset/fromGeometry";
-import { UNITS_DECLARED, warn, type LoadWarning } from "../../asset/types";
-import type { GeometryPipeline, TranscodeOutput } from "../../registry/types";
-import { convertOcctResult } from "./convert";
+import { loadOcct } from '../../decoders/occtWasm';
+import { countsFor } from '../../asset/fromGeometry';
+import { UNITS_DECLARED, warn, type LoadWarning } from '../../asset/types';
+import type { GeometryPipeline, TranscodeOutput } from '../../registry/types';
+import { convertOcctResult } from './convert';
 
 /**
  * STEP, IGES and BREP, via Open CASCADE compiled to WebAssembly.
@@ -16,7 +16,7 @@ import { convertOcctResult } from "./convert";
  * means the ruler reports a real physical length from a CAD file with nothing assumed —
  * verified with a millimetre and an inch file describing the same box (docs/SPIKES.md S1).
  */
-export type OcctFormat = "step" | "iges" | "brep";
+export type OcctFormat = 'step' | 'iges' | 'brep';
 
 /**
  * One pipeline per reader.
@@ -29,22 +29,22 @@ export type OcctFormat = "step" | "iges" | "brep";
  */
 export function createOcctPipeline(format: OcctFormat): GeometryPipeline {
   return {
-    kind: "geometry",
+    kind: 'geometry',
 
     async transcode(input, ctx) {
       const started = performance.now();
 
-      ctx.onProgress("Loading the CAD engine", null);
+      ctx.onProgress('Loading the CAD engine', null);
       const occt = await loadOcct();
       ctx.signal.throwIfAborted();
 
-      ctx.onProgress("Tessellating", null);
+      ctx.onProgress('Tessellating', null);
       const result = occt.ReadFile(
         format,
         new Uint8Array(input.primary.bytes),
         {
           // Metres, so metersPerUnit is 1 and the contract needs no per-format special case.
-          linearUnit: "meter",
+          linearUnit: 'meter',
           linearDeflectionType: ctx.quality.cad.linearDeflectionType,
           linearDeflection: ctx.quality.cad.linearDeflection,
           angularDeflection: ctx.quality.cad.angularDeflection,
@@ -57,9 +57,9 @@ export function createOcctPipeline(format: OcctFormat): GeometryPipeline {
       if (scene.meshes.some((m) => !m.normals)) {
         warnings.push(
           warn(
-            "no-normals",
-            "Some faces had no normals; they were derived.",
-            "info",
+            'no-normals',
+            'Some faces had no normals; they were derived.',
+            'info',
           ),
         );
       }
@@ -72,8 +72,8 @@ export function createOcctPipeline(format: OcctFormat): GeometryPipeline {
         units: UNITS_DECLARED(1),
         // CAD is Z-up by convention and OCCT preserves the file's own axes, so the finaliser
         // rotates once to bring it into the viewer's Y-up world.
-        sourceUpAxis: "Z",
-        orientation: "file",
+        sourceUpAxis: 'Z',
+        orientation: 'file',
         warnings,
         counts: countsFor(scene.meshes),
         parseMs: performance.now() - started,
@@ -83,6 +83,7 @@ export function createOcctPipeline(format: OcctFormat): GeometryPipeline {
   };
 }
 
-export const stepPipeline = createOcctPipeline("step");
-export const igesPipeline = createOcctPipeline("iges");
-export const brepPipeline = createOcctPipeline("brep");
+export const stepPipeline = createOcctPipeline('step');
+export const igesPipeline = createOcctPipeline('iges');
+// No brepPipeline: BREP is not registered, so it would be unreachable. createOcctPipeline
+// makes adding it back a one-line change if a fixture ever appears.

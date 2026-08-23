@@ -14,8 +14,61 @@ import { makeProbe } from '../detect/probe';
 import { snifferFor } from '../detect/detect';
 import type { FormatId } from '../format-id';
 import { registry } from '../registry';
+import { fetchOcctWasm } from '../decoders/occtWasm';
+import { isWorkerEligible, parseInWorker, workersAvailable } from '../workers/client';
+import type { TranscodeResult } from '../workers/protocol';
 import { DEFAULT_QUALITY, type LoadContext, type LoadInput, type ProgressReport, type QualityOptions } from '../registry/types';
+import type { GeometryPipeline } from '../registry/types';
 import { finalize } from './finalize';
+
+/**
+ * Run a geometry pipeline, in a worker where that is possible.
+ *
+ * The inline path is not a lesser fallback — it is the same `transcode` call, and it is what
+ * the test suite exercises, so tests run production code rather than a parallel
+ * implementation.
+ *
+ * @param mayTransfer whether the input buffers can be handed over rather than copied.
+ * Transferring DETACHES them, so it is only safe once no other format candidate could still
+ * need to read them.
+ */
+async function runTranscode(
+  format: FormatId,
+  pipeline: GeometryPipeline,
+  input: LoadInput,
+  ctx: LoadContext,
+  mayTransfer: boolean,
+): Promise<TranscodeResult> {
+  if (!workersAvailable() || !isWorkerEligible(format)) {
+    return pipeline.transcode(input, ctx);
+  }
+
+  const companions: Record<string, ArrayBuffer> = {};
+  for (const [path, file] of input.companions) {
+    companions[path] = mayTransfer ? file.bytes : file.bytes.slice(0);
+  }
+
+  try {
+    return await parseInWorker({
+      format,
+      fileName: input.primary.name,
+      bytes: mayTransfer ? input.primary.bytes : input.primary.bytes.slice(0),
+      companions,
+      quality: ctx.quality,
+      onProgress: ctx.onProgress,
+      loadWasm: fetchOcctWasm,
+    });
+  } catch (err) {
+    // A worker that could not even be constructed — a hostile CSP, say — is an environment
+    // problem rather than a parse failure, and the buffers are still intact because nothing
+    // was transferred. Anything else is a genuine error and must surface.
+    if (err instanceof Error && /worker/i.test(err.message) && !mayTransfer) {
+      ctx.warn(warn('fallback-main-thread', 'Parsing on the main thread; workers are unavailable.', 'info'));
+      return pipeline.transcode(input, ctx);
+    }
+    throw err;
+  }
+}
 
 export interface LoadOptions {
   readonly signal?: AbortSignal;
@@ -94,7 +147,10 @@ export async function loadAsset(input: LoadInput, options: LoadOptions = {}): Pr
       let parseMs: number;
 
       if (pipeline.kind === 'geometry') {
-        const out = await pipeline.transcode(input, attemptCtx);
+        // Only the final candidate may transfer: an earlier one throwing has to leave the
+        // bytes readable for the next attempt.
+        const isLastCandidate = attempt === implemented.length - 1;
+        const out = await runTranscode(id, pipeline, input, attemptCtx, isLastCandidate);
         raw = {
           object: buildScene(out.scene),
           units: out.units,
