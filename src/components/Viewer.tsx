@@ -1,5 +1,6 @@
 import { Canvas } from '@react-three/fiber';
 import { NeutralToneMapping } from 'three';
+import { setDecoderRenderer } from '../lib/decoders/gltfDecoders';
 import type { LoadedModel } from '../lib/asset/types';
 import type { ModelBounds } from '../lib/bounds';
 import type { ViewId } from '../lib/camera';
@@ -39,6 +40,9 @@ export function Viewer({ model, bounds, apiRef, onActiveViewChange, reduceMotion
       // from the model and the current orbit distance.
       camera={{ fov: 45, near: 0.1, far: 1000, position: [1, 1, 1] }}
       onCreated={({ gl, scene }) => {
+        // KTX2 needs a live renderer to know which compressed texture formats the GPU
+        // supports; without this, a .ktx2-textured glTF loads untextured with a warning.
+        setDecoderRenderer(gl);
         // Khronos PBR Neutral rather than ACES, which desaturates and shifts hue — wrong
         // when the user's part is colour-coded.
         gl.toneMapping = NeutralToneMapping;

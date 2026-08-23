@@ -221,6 +221,32 @@ try {
   const plyFrame = await shot();
   check('a PLY sample loads and renders', inkPct(plyFrame) > 2, `${inkPct(plyFrame).toFixed(1)}% ink`);
 
+  // The two headline formats, each checked for the thing that makes it distinctive.
+  const statOf = (name) => evalJs(`document.querySelector('[data-stat="${name}"]')?.textContent ?? ''`);
+
+  await reload();
+  await click('[data-sample="glb"]');
+  await waitFor(`!!document.querySelector('[data-view="iso"]')`);
+  await click('[data-view="iso"]');
+  const glbFrame = await shot();
+  check('a GLB sample loads and renders', inkPct(glbFrame) > 2, `${inkPct(glbFrame).toFixed(1)}% ink`);
+  check('glTF reports 12 triangles', (await statOf('triangles')) === '12');
+  // The spec mandates metres, so the box must read as real millimetres, not bare units.
+  const glbDims = await statOf('dimensions');
+  check('glTF reports real units', /mm/.test(glbDims), glbDims);
+
+  await reload();
+  await click('[data-sample="usda"]');
+  await waitFor(`!!document.querySelector('[data-view="iso"]')`);
+  await click('[data-view="iso"]');
+  const usdFrame = await shot();
+  check('a USD sample loads and renders', inkPct(usdFrame) > 2, `${inkPct(usdFrame).toFixed(1)}% ink`);
+  check('USD reports 12 triangles', (await statOf('triangles')) === '12');
+  const usdDims = await statOf('dimensions');
+  // The stage is authored in millimetres AND Z-up; both conversions must land it at
+  // 10 x 20 x 30 mm, upright, the same as every other format of the same box.
+  check('USD converts its stage units and up-axis', /^10\.000 × 20\.000 × 30\.000 mm$/.test(usdDims), usdDims);
+
   // 2. Every view button.
   await reload();
   await click('[data-sample="stl-mm"]');

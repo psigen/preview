@@ -1,5 +1,7 @@
+import { gltfDescriptor } from '../formats/gltf/descriptor';
 import { plyDescriptor } from '../formats/ply/descriptor';
 import { stlDescriptor } from '../formats/stl/descriptor';
+import { usdDescriptor } from '../formats/usd/descriptor';
 import { createRegistry } from './registry';
 import type { FormatDescriptor } from './types';
 
@@ -21,6 +23,8 @@ const CAD_DESCRIPTORS: FormatDescriptor[] = [
 ];
 
 export const registry = createRegistry([
+  usdDescriptor,
+  gltfDescriptor,
   stlDescriptor,
   plyDescriptor,
   ...(cadEnabled ? CAD_DESCRIPTORS : []),

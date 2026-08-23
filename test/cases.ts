@@ -20,6 +20,8 @@ export interface FormatCase {
   readonly format: FormatId;
   readonly fileName: string;
   readonly bytes: () => ArrayBuffer;
+  /** Sidecars this case needs, keyed by the path the primary references. */
+  readonly companions?: () => Map<string, ArrayBuffer>;
   /** Whether detection must still succeed when the file is renamed to blob.dat. */
   readonly strongSniff: boolean;
   readonly expectTriangles: number;
@@ -37,6 +39,18 @@ export interface FormatCase {
 
 const BOX_BOUNDS = { min: [0, 0, 0] as Vec3, max: [10, 20, 30] as Vec3 };
 
+/**
+ * The same physical box, in metres, as a unit-declaring format presents it. USD and glTF
+ * both put world space in metres, so their bounds are the millimetre box divided by 1000.
+ */
+const METRIC_BOUNDS = { min: [0, 0, 0] as Vec3, max: [0.01, 0.02, 0.03] as Vec3 };
+
+/** A Z-up stage rotated to Y-up: (x, y, z) -> (x, z, -y), so the box hangs below the origin. */
+const METRIC_BOUNDS_FROM_Z_UP = {
+  min: [0, 0, -0.03] as Vec3,
+  max: [0.01, 0.02, 0] as Vec3,
+};
+
 /** Every unitless triangle mesh of the canonical box shares these expectations. */
 const unitlessMesh = (over: Partial<FormatCase> & Pick<FormatCase, 'name' | 'format' | 'fileName' | 'bytes' | 'strongSniff'>): FormatCase => ({
   expectTriangles: 12,
@@ -51,6 +65,103 @@ const unitlessMesh = (over: Partial<FormatCase> & Pick<FormatCase, 'name' | 'for
 });
 
 export const CASES: readonly FormatCase[] = [
+  {
+    name: 'GLB',
+    format: 'gltf',
+    fileName: 'box.glb',
+    bytes: () => W.glb(extentsIn('meter')),
+    strongSniff: true,
+    expectTriangles: 12,
+    expectPoints: 0,
+    expectMeshes: 1,
+    expectBounds: METRIC_BOUNDS,
+    // The spec mandates metres; no field to read and nothing to assume.
+    expectMetersPerUnit: 1,
+    expectSourceUpAxis: 'Y',
+    expectBakedScale: 1,
+    expectWarnings: [],
+  },
+  {
+    name: 'glTF with an external .bin',
+    format: 'gltf',
+    fileName: 'box.gltf',
+    bytes: () => W.gltfSeparate(extentsIn('meter')).gltf,
+    companions: () => {
+      const { bin, binName } = W.gltfSeparate(extentsIn('meter'));
+      return new Map([[binName, bin]]);
+    },
+    strongSniff: true,
+    expectTriangles: 12,
+    expectPoints: 0,
+    expectMeshes: 1,
+    expectBounds: METRIC_BOUNDS,
+    expectMetersPerUnit: 1,
+    expectSourceUpAxis: 'Y',
+    expectBakedScale: 1,
+    expectWarnings: [],
+  },
+  {
+    name: 'USDA, metres, Y-up',
+    format: 'usd',
+    fileName: 'box-m.usda',
+    bytes: () => W.usda(1, 'Y'),
+    strongSniff: true,
+    expectTriangles: 12,
+    expectPoints: 0,
+    expectMeshes: 1,
+    expectBounds: METRIC_BOUNDS,
+    expectMetersPerUnit: 1,
+    expectSourceUpAxis: 'Y',
+    expectBakedScale: 1,
+    expectWarnings: [],
+  },
+  {
+    name: 'USDA, centimetres, Y-up',
+    format: 'usd',
+    fileName: 'box-cm.usda',
+    bytes: () => W.usda(0.01, 'Y'),
+    strongSniff: true,
+    expectTriangles: 12,
+    expectPoints: 0,
+    expectMeshes: 1,
+    expectBounds: METRIC_BOUNDS,
+    // Still 1: the loader already scaled the root, so world space is metres either way.
+    expectMetersPerUnit: 1,
+    expectSourceUpAxis: 'Y',
+    // ...and that baked scale is visible here, which is exactly what must NOT be a fit scale.
+    expectBakedScale: 0.01,
+    expectWarnings: [],
+  },
+  {
+    name: 'USDA, millimetres, Z-up',
+    format: 'usd',
+    fileName: 'box-mm-zup.usda',
+    bytes: () => W.usda(0.001, 'Z'),
+    strongSniff: true,
+    expectTriangles: 12,
+    expectPoints: 0,
+    expectMeshes: 1,
+    expectBounds: METRIC_BOUNDS_FROM_Z_UP,
+    expectMetersPerUnit: 1,
+    expectSourceUpAxis: 'Z',
+    expectBakedScale: 0.001,
+    expectWarnings: [],
+  },
+  {
+    name: 'USDZ package',
+    format: 'usd',
+    fileName: 'box.usdz',
+    bytes: () => W.usdz(0.001, 'Y'),
+    strongSniff: true,
+    expectTriangles: 12,
+    expectPoints: 0,
+    expectMeshes: 1,
+    expectBounds: METRIC_BOUNDS,
+    expectMetersPerUnit: 1,
+    expectSourceUpAxis: 'Y',
+    expectBakedScale: 0.001,
+    expectWarnings: [],
+  },
   unitlessMesh({
     name: 'STL ascii',
     format: 'stl',

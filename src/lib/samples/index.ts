@@ -44,6 +44,87 @@ function plyAscii(ext: Extents): ArrayBuffer {
   return bytes.buffer.slice(bytes.byteOffset, bytes.byteOffset + bytes.byteLength) as ArrayBuffer;
 }
 
+/** A minimal GLB: JSON chunk + BIN chunk, hand-built so nothing depends on an exporter. */
+function glb(ext: Extents): ArrayBuffer {
+  const c = corners(ext);
+  const pos = new Float32Array(36 * 3);
+  const nrm = new Float32Array(36 * 3);
+  let o = 0;
+  TRIS.forEach((tri, t) => {
+    for (const vi of tri) {
+      pos.set(c[vi]!, o);
+      nrm.set(FACE_NORMALS[t]!, o);
+      o += 3;
+    }
+  });
+  const bin = new Uint8Array(pos.byteLength + nrm.byteLength);
+  bin.set(new Uint8Array(pos.buffer), 0);
+  bin.set(new Uint8Array(nrm.buffer), pos.byteLength);
+  const json = JSON.stringify({
+    asset: { version: '2.0', generator: 'preview samples' },
+    scene: 0,
+    scenes: [{ nodes: [0] }],
+    nodes: [{ mesh: 0, name: 'box' }],
+    meshes: [{ name: 'box', primitives: [{ attributes: { POSITION: 0, NORMAL: 1 }, mode: 4 }] }],
+    accessors: [
+      { bufferView: 0, componentType: 5126, count: 36, type: 'VEC3',
+        min: [0, 0, 0], max: [ext.x, ext.y, ext.z] },
+      { bufferView: 1, componentType: 5126, count: 36, type: 'VEC3' },
+    ],
+    bufferViews: [
+      { buffer: 0, byteOffset: 0, byteLength: pos.byteLength, target: 34962 },
+      { buffer: 0, byteOffset: pos.byteLength, byteLength: nrm.byteLength, target: 34962 },
+    ],
+    buffers: [{ byteLength: bin.byteLength }],
+  });
+  const jsonBytes = enc.encode(json);
+  const jsonPad = (4 - (jsonBytes.length % 4)) % 4;
+  const binPad = (4 - (bin.length % 4)) % 4;
+  const total = 12 + 8 + jsonBytes.length + jsonPad + 8 + bin.length + binPad;
+  const buf = new ArrayBuffer(total);
+  const dv = new DataView(buf);
+  const u8 = new Uint8Array(buf);
+  dv.setUint32(0, 0x46546c67, true);
+  dv.setUint32(4, 2, true);
+  dv.setUint32(8, total, true);
+  let p = 12;
+  dv.setUint32(p, jsonBytes.length + jsonPad, true);
+  dv.setUint32(p + 4, 0x4e4f534a, true);
+  p += 8;
+  u8.set(jsonBytes, p);
+  u8.fill(0x20, p + jsonBytes.length, p + jsonBytes.length + jsonPad);
+  p += jsonBytes.length + jsonPad;
+  dv.setUint32(p, bin.length + binPad, true);
+  dv.setUint32(p + 4, 0x004e4942, true);
+  p += 8;
+  u8.set(bin, p);
+  return buf;
+}
+
+/** A USDA stage declaring millimetres and Z-up, so the sample exercises both conversions. */
+function usda(metersPerUnit: number, upAxis: 'Y' | 'Z'): ArrayBuffer {
+  const s = 1e-3 / metersPerUnit;
+  const base = { x: BOX_MM.x * s, y: BOX_MM.y * s, z: BOX_MM.z * s };
+  const e: Extents = upAxis === 'Z' ? { x: base.x, y: base.z, z: base.y } : base;
+  const pts = corners(e).map((v) => `(${v[0]}, ${v[1]}, ${v[2]})`).join(', ');
+  const bytes = enc.encode(`#usda 1.0
+(
+    defaultPrim = "box"
+    metersPerUnit = ${metersPerUnit}
+    upAxis = "${upAxis}"
+)
+
+def Mesh "box"
+{
+    int[] faceVertexCounts = [${TRIS.map(() => 3).join(', ')}]
+    int[] faceVertexIndices = [${TRIS.flat().join(', ')}]
+    point3f[] points = [${pts}]
+    uniform token subdivisionScheme = "none"
+}
+`);
+  return bytes.buffer.slice(bytes.byteOffset, bytes.byteOffset + bytes.byteLength) as ArrayBuffer;
+}
+
 export interface SampleModel {
   readonly id: string;
   /** Shown in the picker. */
@@ -85,6 +166,18 @@ export const SAMPLES: readonly SampleModel[] = [
     label: 'Box, STL at 1000x scale',
     fileName: 'sample-box-large.stl',
     bytes: () => stlBinary(scaled(1000)),
+  },
+  {
+    id: 'glb',
+    label: 'Box, GLB (metres, per the glTF spec)',
+    fileName: 'sample-box.glb',
+    bytes: () => glb(extentsIn('meter')),
+  },
+  {
+    id: 'usda',
+    label: 'Box, USD stage in millimetres, Z-up',
+    fileName: 'sample-box.usda',
+    bytes: () => usda(0.001, 'Z'),
   },
   {
     id: 'ply',

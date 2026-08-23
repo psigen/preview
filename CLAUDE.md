@@ -94,6 +94,21 @@ must not touch the DOM, so it can run in a worker; `scene` returns an Object3D o
 thread and may use the DOM. Every format that needs textures, DOMParser or `window` has to
 be `scene`.
 
+## USD stage metadata is read back off the transform
+
+`USDComposer` applies the stage's `metersPerUnit` to the root scale and its Z-up rotation to
+`rotation.x`, then discards both — neither is recorded anywhere readable. So
+[src/lib/formats/usd/units.ts](src/lib/formats/usd/units.ts) recovers them from the
+transform, which is coupling to three's internals: r183 did not behave this way at all.
+
+That is why `units.test.ts` parses each stage AND independently regexes its header, then
+requires the two to agree. If a three upgrade relocates the bake, every USD measurement
+silently changes scale, and that canary is the only thing that would notice.
+
+The pipeline reports `metersPerUnit: 1`, NOT the stage's own value: the contract is metres
+per WORLD unit after any transform the loader already baked in, and USDLoader has already
+scaled the root. Reporting the stage value would apply the conversion twice.
+
 ## Three drag-and-drop traps
 
 Window-wide drop is where this pattern usually breaks, and every failure is silent.

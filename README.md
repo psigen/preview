@@ -27,15 +27,18 @@ and the format-detection library; the viewer, loader plugins and ruler are still
 | Units, camera and budget maths (`src/lib/`) | done |
 | Asset contract: payload, orientation, stats, bounds, disposal | done |
 | Viewer: camera, standard views, lighting | done |
-| Format registry, STL and PLY loading, bundled samples | done |
+| Format registry and bundled samples | done |
+| **USD, glTF/GLB, STL, PLY** | done |
 | Drag-and-drop, folder drop, in-place replacement | done |
-| Remaining formats, measurement ruler | not yet |
+| OBJ, 3MF, FBX, STEP/IGES; measurement ruler | not yet |
 
-403 unit tests pass headless across a Node tier and a jsdom tier, plus a
-31-check end-to-end verification (`npm run verify:viewer`) that drives the real
+474 unit tests pass headless across a Node tier and a jsdom tier, plus a
+37-check end-to-end verification (`npm run verify:viewer`) that drives the real
 UI in headless Chrome, including a calibrated geometry-leak check.
 
-The feature list above describes the target. Nothing in it is wired up yet.
+The four must-have formats all load. A 10 × 20 × 30 mm box reads identically whether it
+arrives as a GLB in metres, a USD stage in millimetres and Z-up, an STL, or a PLY — which is
+the invariant the units and orientation design exists to guarantee.
 
 ## Quick start
 
@@ -72,8 +75,8 @@ npm run verify:viewer # end-to-end camera checks in headless Chrome (needs a bui
 
 | Format | Extensions | Loader | Units |
 | --- | --- | --- | --- |
-| OpenUSD | `.usd` `.usda` `.usdc` `.usdz` | three `USDLoader` | declared (`metersPerUnit`) |
-| glTF 2.0 | `.gltf` `.glb` | three `GLTFLoader` + Draco / KTX2 / meshopt | metres, per spec |
+| OpenUSD | `.usd` `.usda` `.usdc` `.usdz` | three `USDLoader` — **working** | declared (`metersPerUnit`) |
+| glTF 2.0 | `.gltf` `.glb` | three `GLTFLoader` + Draco / KTX2 / meshopt — **working** | metres, per spec |
 | STEP | `.step` `.stp` | `occt-import-js` (wasm) | declared, converted by OCCT |
 | IGES | `.iges` `.igs` | `occt-import-js` (wasm) | declared, converted by OCCT |
 | BREP | `.brep` `.brp` | `occt-import-js` (wasm) | declared |

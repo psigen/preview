@@ -30,6 +30,7 @@ export default defineConfig({
           environment: 'node',
           include: ['src/lib/**/*.test.ts', 'test/**/*.test.ts'],
           exclude: ['**/*.jsdom.test.ts', '**/*.browser.test.ts'],
+          setupFiles: ['./test/setup.node.ts'],
           testTimeout: 30_000, // a cold OCCT wasm compile
         },
       },

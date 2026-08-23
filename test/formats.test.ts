@@ -21,6 +21,17 @@ import { computeStats } from '../src/lib/asset/stats';
 import { loadAsset, singleFileInput, UnsupportedFormatError } from '../src/lib/load/loadAsset';
 import type { Vec3 } from '../src/lib/vec3';
 
+/** Build the loader input for a case, wiring up any sidecars it declares. */
+function inputFor(testCase: (typeof CASES)[number]) {
+  const base = singleFileInput(testCase.fileName, testCase.bytes());
+  const declared = testCase.companions?.();
+  if (!declared) return base;
+  const companions = new Map(
+    [...declared].map(([path, bytes]) => [path, { name: path, path, bytes }]),
+  );
+  return { ...base, companions };
+}
+
 const expectVec3Close = (actual: Vec3, want: Vec3, digits = 4) => {
   for (let i = 0; i < 3; i++) expect(actual[i], `component ${i}`).toBeCloseTo(want[i]!, digits);
 };
@@ -39,7 +50,7 @@ describe('coverage gate', () => {
 });
 
 describe.each(CASES)('$name', (testCase) => {
-  const load = () => loadAsset(singleFileInput(testCase.fileName, testCase.bytes()));
+  const load = () => loadAsset(inputFor(testCase));
 
   it('is detected from its filename', () => {
     const probe = makeProbe(testCase.fileName, testCase.bytes());
@@ -63,8 +74,9 @@ describe.each(CASES)('$name', (testCase) => {
 
   it('lands in the right place in world space', async () => {
     const model = await load();
-    expectVec3Close(model.stats.bounds.min, testCase.expectBounds.min);
-    expectVec3Close(model.stats.bounds.max, testCase.expectBounds.max);
+    // 6 places, because the metric cases are around 0.01 and 4 would pass on anything.
+    expectVec3Close(model.stats.bounds.min, testCase.expectBounds.min, 6);
+    expectVec3Close(model.stats.bounds.max, testCase.expectBounds.max, 6);
     model.dispose();
   });
 
@@ -88,11 +100,19 @@ describe.each(CASES)('$name', (testCase) => {
   it('agrees with every other format on the diagonal', async () => {
     const model = await load();
     const worldDiagonal = Math.hypot(...model.stats.size);
-    if (model.units.known) {
-      expect(worldDiagonal * model.units.metersPerUnit).toBeCloseTo(DIAGONAL_ABSTRACT * 1e-3, 9);
-    } else {
-      expect(worldDiagonal).toBeCloseTo(DIAGONAL_ABSTRACT, 6);
-    }
+    const measured = model.units.known
+      ? worldDiagonal * model.units.metersPerUnit
+      : worldDiagonal * 1e-3; // unitless fixtures carry the raw millimetre numbers
+    const expected = DIAGONAL_ABSTRACT * 1e-3;
+
+    /**
+     * RELATIVE, not absolute. Positions are Float32, whose precision is proportional to
+     * magnitude: a metre-scale glTF stores 0.03 as 0.029999999329447746, which is 8e-10 off
+     * in absolute terms but only 2e-8 in relative terms. An absolute tolerance would pass
+     * for millimetre-scale fixtures — where 10, 20 and 30 are exactly representable — and
+     * fail for metre-scale ones purely because of where the decimal point sits.
+     */
+    expect(Math.abs(measured - expected) / expected).toBeLessThan(1e-6);
     model.dispose();
   });
 
@@ -169,9 +189,9 @@ describe('orchestration', () => {
   });
 
   it('names the format when it is recognised but not implemented yet', async () => {
-    // A GLB is detected confidently, but glTF has no pipeline in this build.
-    const glb = (await import('./gen/writers')).glb((await import('./gen/box')).extentsIn('millimeter'));
-    await expect(loadAsset(singleFileInput('box.glb', glb))).rejects.toThrow(/does not support yet/i);
+    // 3MF is detected confidently, but has no pipeline in this build.
+    const threemf = (await import('./gen/writers')).threemf('millimeter');
+    await expect(loadAsset(singleFileInput('box.3mf', threemf))).rejects.toThrow(/does not support yet/i);
   });
 
   it('honours an explicit format hint over the bytes', async () => {
