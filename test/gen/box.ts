@@ -1,33 +1,22 @@
 /**
- * The canonical fixture shape, used by every format.
+ * Test-facing view of the canonical box.
  *
- * A 10 x 20 x 30 MILLIMETRE box with one corner at the origin. Chosen deliberately:
- *  - ASYMMETRIC, so an axis swap or a Z-up/Y-up mistake shows up in the bounding box
- *    instead of hiding behind symmetry.
- *  - NOT origin-centred, so anything that silently recentres the model is visible.
- *  - 12 triangles / 8 unique vertices, so counts are exact rather than approximate.
- *  - Its space diagonal is rotation-invariant, which is what makes DIAGONAL_M a single
- *    number every format must agree on.
+ * The geometry itself lives in src/lib/samples/box.ts so the bundled sample models and the
+ * fixtures cannot drift apart. Only the derived constants the tests assert against are
+ * defined here.
  */
-export const BOX_MM = Object.freeze({ x: 10, y: 20, z: 30 });
-
-export type Vec3 = readonly [number, number, number];
-export interface Extents {
-  x: number;
-  y: number;
-  z: number;
-}
-
-/** Metres per one unit of the named unit. */
-export const UNIT_M = Object.freeze({
-  micrometer: 1e-6,
-  millimeter: 1e-3,
-  centimeter: 1e-2,
-  meter: 1,
-  inch: 0.0254,
-  foot: 0.3048,
-});
-export type UnitName = keyof typeof UNIT_M;
+export {
+  BOX_MM,
+  UNIT_METERS as UNIT_M,
+  TRIS,
+  FACE_NORMALS,
+  TRIANGLE_COUNT,
+  VERTEX_COUNT,
+  corners,
+  extentsIn,
+  soup,
+} from '../../src/lib/samples/box';
+export type { Extents, Triple as Vec3, UnitName } from '../../src/lib/samples/box';
 
 /**
  * The space diagonal in METRES. THE cross-format invariant: a unitless STL, a Z-up 3MF in
@@ -40,54 +29,3 @@ export const DIAGONAL_M = Math.hypot(0.01, 0.02, 0.03);
 
 /** The same diagonal for unitless formats, which carry the raw millimetre numbers. */
 export const DIAGONAL_ABSTRACT = Math.hypot(10, 20, 30);
-
-/** The box's extents expressed in `unit`. */
-export function extentsIn(unit: UnitName): Extents {
-  const s = 1e-3 / UNIT_M[unit];
-  return { x: BOX_MM.x * s, y: BOX_MM.y * s, z: BOX_MM.z * s };
-}
-
-/** The 8 corners. Index bit0 = X, bit1 = Y, bit2 = Z. */
-export function corners({ x, y, z }: Extents): Vec3[] {
-  return [
-    [0, 0, 0],
-    [x, 0, 0],
-    [x, y, 0],
-    [0, y, 0],
-    [0, 0, z],
-    [x, 0, z],
-    [x, y, z],
-    [0, y, z],
-  ];
-}
-
-/** 12 triangles as corner-index triples, counter-clockwise seen from outside. */
-export const TRIS: readonly (readonly [number, number, number])[] = Object.freeze([
-  [0, 3, 2], [0, 2, 1], // -Z
-  [4, 5, 6], [4, 6, 7], // +Z
-  [0, 1, 5], [0, 5, 4], // -Y
-  [3, 7, 6], [3, 6, 2], // +Y
-  [0, 4, 7], [0, 7, 3], // -X
-  [1, 2, 6], [1, 6, 5], // +X
-]);
-
-/** Outward face normal per triangle, matching TRIS order. */
-export const FACE_NORMALS: readonly Vec3[] = Object.freeze([
-  [0, 0, -1], [0, 0, -1],
-  [0, 0, 1], [0, 0, 1],
-  [0, -1, 0], [0, -1, 0],
-  [0, 1, 0], [0, 1, 0],
-  [-1, 0, 0], [-1, 0, 0],
-  [1, 0, 0], [1, 0, 0],
-]);
-
-export const TRIANGLE_COUNT = TRIS.length;
-export const VERTEX_COUNT = 8;
-
-/** Flat, non-indexed triangle soup: 36 vertices. */
-export function soup(ext: Extents): Vec3[] {
-  const c = corners(ext);
-  const out: Vec3[] = [];
-  for (const [a, b, d] of TRIS) out.push(c[a]!, c[b]!, c[d]!);
-  return out;
-}

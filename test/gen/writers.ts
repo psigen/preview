@@ -96,6 +96,22 @@ export function plyBinary(ext: Extents, littleEndian = true): ArrayBuffer {
   return toArrayBuffer(out);
 }
 
+/**
+ * A PLY with vertices but NO face element. PLYLoader emits no index for one of these, which
+ * is how the pipeline knows to draw points rather than triangles.
+ */
+export function plyPoints(ext: Extents): ArrayBuffer {
+  const c = corners(ext);
+  let s =
+    `ply\nformat ascii 1.0\nelement vertex 8\n` +
+    `property float x\nproperty float y\nproperty float z\n` +
+    `property uchar red\nproperty uchar green\nproperty uchar blue\nend_header\n`;
+  c.forEach((v, i) => {
+    s += `${v[0]} ${v[1]} ${v[2]} ${i * 30} ${255 - i * 30} 128\n`;
+  });
+  return toArrayBuffer(enc.encode(s));
+}
+
 /* ---------------------------------------------------------------- OBJ + MTL */
 
 export function objMtl(ext: Extents): { obj: ArrayBuffer; mtl: ArrayBuffer; mtlName: string } {

@@ -27,9 +27,10 @@ and the format-detection library; the viewer, loader plugins and ruler are still
 | Units, camera and budget maths (`src/lib/`) | done |
 | Asset contract: payload, orientation, stats, bounds, disposal | done |
 | Viewer: camera, standard views, lighting | done |
-| Loader plugins, drag-and-drop, measurement ruler | not yet |
+| Format registry, STL and PLY loading, bundled samples | done |
+| Remaining formats, drag-and-drop, measurement ruler | not yet |
 
-245 unit tests pass headless, plus a 16-check end-to-end viewer verification
+323 unit tests pass headless, plus a 17-check end-to-end verification
 (`npm run verify:viewer`) that drives the real UI in headless Chrome.
 
 The feature list above describes the target. Nothing in it is wired up yet.
@@ -75,8 +76,8 @@ npm run verify:viewer # end-to-end camera checks in headless Chrome (needs a bui
 | IGES | `.iges` `.igs` | `occt-import-js` (wasm) | declared, converted by OCCT |
 | BREP | `.brep` `.brp` | `occt-import-js` (wasm) | declared |
 | 3MF | `.3mf` | three `3MFLoader` | declared (`unit` attribute) |
-| STL | `.stl` | three `STLLoader` | none — abstract |
-| PLY | `.ply` | three `PLYLoader` | none — abstract |
+| STL | `.stl` | three `STLLoader` — **working** | none — abstract |
+| PLY | `.ply` | three `PLYLoader` — **working** | none — abstract |
 | OBJ | `.obj` (+ `.mtl`) | three `OBJLoader` | none — abstract |
 | FBX | `.fbx` | three `FBXLoader` | none — abstract |
 
@@ -167,6 +168,9 @@ src/
   lib/bounds.ts        # world bounds, union-of-spheres, grid sizing
   lib/vec3.ts          # tuple vector maths shared by camera, bounds and measurement
   lib/limits.ts        # size/complexity budgets and the degradation they drive
+  lib/registry/        # the format registry and the plugin contract
+  lib/formats/         # one directory per format: a tiny descriptor + a lazy pipeline
+  lib/samples/         # the canonical box, and the bundled sample models built from it
   lib/format-id.ts     # the shared format vocabulary
   components/          # Viewer, CameraRig, SceneEnvironment, ModelRoot, ViewToolbar
   hooks/               # useRoomEnvironment, usePrefersReducedMotion

@@ -4,7 +4,7 @@ import { DIAGONAL_ABSTRACT, DIAGONAL_M } from '../../../test/gen/box';
 import { buildScene } from '../asset/payload';
 import { Z_UP_TO_Y_UP_X_ROTATION, upAxisRotationX } from '../asset/orient';
 import { UNITS_DECLARED, UNITS_UNKNOWN, type RawAsset } from '../asset/types';
-import { stubPayload, stubRawAsset } from './stub';
+import { stubPayload, stubRawAsset } from '../../../test/gen/stubAsset';
 import { finalize, type FinalizeMeta } from './finalize';
 
 const META: FinalizeMeta = { id: 1, name: 'test', format: 'stl', bytes: 123, parseMs: 4 };
@@ -213,7 +213,7 @@ describe('metadata and disposal', () => {
   });
 });
 
-describe('the stub loader', () => {
+describe('the stub asset helper', () => {
   it('produces the canonical box through the production path', () => {
     const model = fin(stubRawAsset());
     expect(model.stats.triangles).toBe(12);

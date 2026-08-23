@@ -79,6 +79,21 @@ only `FormatId` with the loader registry. Two subtleties worth knowing:
   offsets 80..83 always contains a NUL, which is what stops its literal `solid ...` header from
   being read as an ASCII STL. There is a regression test pinning this.
 
+## Adding a format
+
+One line in [src/lib/registry/index.ts](src/lib/registry/index.ts), one directory under
+`src/lib/formats/<id>/`, and one case in [test/cases.ts](test/cases.ts) — a test fails if a
+registered format has no fixture, so the third step is not optional.
+
+A descriptor holds only an id, capabilities, and a `pipeline()` that dynamic-imports. It
+**must not statically import three, a loader, or wasm**: a source-text test enforces that,
+and it is what keeps each parser in its own lazy chunk instead of the entry bundle.
+
+Pick the kind by what the parser needs. `geometry` returns transferable typed arrays and
+must not touch the DOM, so it can run in a worker; `scene` returns an Object3D on the main
+thread and may use the DOM. Every format that needs textures, DOMParser or `window` has to
+be `scene`.
+
 ## Two camera-controls traps
 
 Both were found by `npm run verify:viewer` after all unit tests passed, and both are the

@@ -1,0 +1,144 @@
+/**
+ * bytes -> detect -> pipeline -> finalize.
+ *
+ * Detection returns an ORDERED candidate list rather than a single answer, and this tries
+ * each in turn, falling through when one throws. That is the honest response to genuinely
+ * ambiguous input: an .stl that is really a PLY, a .zip that could be USDZ or 3MF. Guessing
+ * once and failing would be worse than trying the second-best reading.
+ */
+import { buildScene } from '../asset/payload';
+import type { LoadedModel, LoadWarning, RawAsset } from '../asset/types';
+import { warn } from '../asset/types';
+import { detectFormat } from '../detect/detect';
+import { makeProbe } from '../detect/probe';
+import { snifferFor } from '../detect/detect';
+import type { FormatId } from '../format-id';
+import { registry } from '../registry';
+import { DEFAULT_QUALITY, type LoadContext, type LoadInput, type ProgressReport, type QualityOptions } from '../registry/types';
+import { finalize } from './finalize';
+
+export interface LoadOptions {
+  readonly signal?: AbortSignal;
+  readonly onProgress?: ProgressReport;
+  readonly quality?: QualityOptions;
+}
+
+export class UnsupportedFormatError extends Error {
+  constructor(
+    message: string,
+    /** What detection thought it was, when it managed to decide at all. */
+    readonly detected: FormatId | null,
+  ) {
+    super(message);
+    this.name = 'UnsupportedFormatError';
+  }
+}
+
+let nextId = 1;
+
+/** Reset between tests so ids stay predictable. */
+export function __resetIdsForTest(): void {
+  nextId = 1;
+}
+
+const noopProgress: ProgressReport = () => {};
+
+export async function loadAsset(input: LoadInput, options: LoadOptions = {}): Promise<LoadedModel> {
+  const { primary } = input;
+  const probe = makeProbe(primary.name, primary.bytes);
+  const detection = detectFormat(probe, input.formatHint);
+
+  if (detection.candidates.length === 0) {
+    throw new UnsupportedFormatError(
+      `Could not recognise "${primary.name}". Supported formats are ` +
+        `${registry.ids().join(', ')} — use "Open as..." to force one.`,
+      null,
+    );
+  }
+
+  const implemented = detection.candidates.filter((id) => registry.has(id));
+  if (implemented.length === 0) {
+    const first = detection.candidates[0]!;
+    const label = snifferFor(first)?.label ?? first;
+    throw new UnsupportedFormatError(
+      `"${primary.name}" looks like ${label}, which this build does not support yet.`,
+      first,
+    );
+  }
+
+  const ctx: LoadContext = {
+    onProgress: options.onProgress ?? noopProgress,
+    warn: () => {},
+    signal: options.signal ?? new AbortController().signal,
+    quality: options.quality ?? DEFAULT_QUALITY,
+  };
+
+  let lastError: unknown = null;
+
+  for (const [attempt, id] of implemented.entries()) {
+    const descriptor = registry.get(id)!;
+    const extra: LoadWarning[] = [];
+    // A fallthrough means the best reading of the bytes did not parse; say so rather than
+    // silently presenting the runner-up as if it had been the obvious answer.
+    if (attempt > 0) {
+      const rejected = implemented.slice(0, attempt).join(', ');
+      extra.push(
+        warn(
+          'ambiguous-format',
+          `This file did not parse as ${rejected}; it was read as ${id} instead.`,
+          'info',
+        ),
+      );
+    }
+
+    const collected: LoadWarning[] = [...extra];
+    const attemptCtx: LoadContext = { ...ctx, warn: (w) => collected.push(w) };
+
+    try {
+      const pipeline = await descriptor.pipeline();
+      let raw: RawAsset;
+      let parseMs: number;
+
+      if (pipeline.kind === 'geometry') {
+        const out = await pipeline.transcode(input, attemptCtx);
+        raw = {
+          object: buildScene(out.scene),
+          units: out.units,
+          sourceUpAxis: out.sourceUpAxis,
+          orientation: out.orientation,
+          warnings: [...collected, ...out.warnings],
+        };
+        parseMs = out.parseMs;
+      } else {
+        const started = performance.now();
+        const loaded = await pipeline.load(input, attemptCtx);
+        parseMs = performance.now() - started;
+        raw = { ...loaded, warnings: [...collected, ...(loaded.warnings ?? [])] };
+      }
+
+      return finalize(raw, {
+        id: nextId++,
+        name: primary.name,
+        format: id,
+        bytes: primary.bytes.byteLength,
+        parseMs,
+      });
+    } catch (err) {
+      if (options.signal?.aborted) throw err;
+      lastError = err;
+    }
+  }
+
+  const message = lastError instanceof Error ? lastError.message : String(lastError);
+  throw new Error(`Could not open "${primary.name}": ${message}`);
+}
+
+/** Convenience for callers that have a single file and no companions. */
+export function singleFileInput(name: string, bytes: ArrayBuffer, formatHint?: FormatId): LoadInput {
+  const lower = name.toLowerCase();
+  return {
+    primary: { name: lower, path: lower, bytes },
+    companions: new Map(),
+    ...(formatHint ? { formatHint } : {}),
+  };
+}

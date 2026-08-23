@@ -167,19 +167,26 @@ try {
   // 1. Scale invariance. Every camera constant is a multiple of the bounding-sphere radius
   //    and nothing rescales the model, so world scale must not change a single pixel.
   const frames = {};
-  for (const sample of ['mm', 'm', 'big']) {
+  for (const sample of ['stl-mm', 'stl-m', 'stl-big']) {
     await click(`[data-sample="${sample}"]`);
     await click('[data-view="iso"]');
     frames[sample] = await shot();
   }
-  check('the render is not blank', inkPct(frames.mm) > 2, `${inkPct(frames.mm).toFixed(1)}% ink`);
-  const dScale = diffPct(frames.mm, frames.m);
-  const dHuge = diffPct(frames.mm, frames.big);
-  check('the same part authored in mm and in m frames identically', dScale < 0.5, `${dScale.toFixed(3)}% differ`);
-  check('10 mm and 100 m frame identically', dHuge < 0.5, `${dHuge.toFixed(3)}% differ`);
+  check('the render is not blank', inkPct(frames['stl-mm']) > 2, `${inkPct(frames['stl-mm']).toFixed(1)}% ink`);
+  const dScale = diffPct(frames['stl-mm'], frames['stl-m']);
+  const dHuge = diffPct(frames['stl-mm'], frames['stl-big']);
+  check('the same box authored in mm and in m frames identically', dScale < 0.5, `${dScale.toFixed(3)}% differ`);
+  check('a 1000x larger box frames identically', dHuge < 0.5, `${dHuge.toFixed(3)}% differ`);
+
+  // A different format of the same shape must load and render, but is NOT pixel-comparable:
+  // PLY carries no normals, so buildScene derives smoothed ones where STL has flat facets.
+  await click('[data-sample="ply"]');
+  await click('[data-view="iso"]');
+  const plyFrame = await shot();
+  check('a PLY sample loads and renders', inkPct(plyFrame) > 2, `${inkPct(plyFrame).toFixed(1)}% ink`);
 
   // 2. Every view button.
-  await click('[data-sample="mm"]');
+  await click('[data-sample="stl-mm"]');
   const views = ['front', 'back', 'right', 'left', 'top', 'bottom', 'iso'];
   const viewFrames = {};
   for (const v of views) {
