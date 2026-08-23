@@ -556,6 +556,44 @@ try {
     !(await evalJs(`!!document.querySelector('.empty-state')`)),
   );
 
+  // Reading the licences must not cost you the model. About used to be a ROUTE, which
+  // unmounted the viewer and ran its cleanup, disposing whatever was open.
+  const loadedName = await evalJs(`document.querySelector('.filename')?.textContent ?? ''`);
+  await click('.about-link');
+  check('the About dialog opens', await evalJs(`!!document.querySelector('[role="dialog"]')`));
+  check(
+    'the model survives opening About',
+    (await evalJs(`document.querySelector('.filename')?.textContent ?? ''`)) === loadedName,
+    loadedName,
+  );
+  check(
+    'the viewer is still mounted behind it',
+    await evalJs(`!!document.querySelector('canvas')`),
+  );
+
+  await click('[data-action="about-close"]');
+  check(
+    'closing About returns to the viewer',
+    !(await evalJs(`!!document.querySelector('[role="dialog"]')`)),
+  );
+  check(
+    'the model is still loaded afterwards',
+    (await evalJs(`document.querySelector('.filename')?.textContent ?? ''`)) === loadedName,
+  );
+  check(
+    'no bare hash is left in the URL',
+    !(await evalJs(`location.hash`)),
+    (await evalJs(`location.hash`)) || '(clean)',
+  );
+
+  // Escape dismisses it too, and takes priority over the measurement ladder.
+  await click('.about-link');
+  await evalJs(
+    `window.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true }))`,
+  );
+  await wait(250);
+  check('Escape closes About', !(await evalJs(`!!document.querySelector('[role="dialog"]')`)));
+
   // Going back to the empty state, and loading something else from there.
   check(
     'the back button is offered once a model is open',
@@ -752,6 +790,18 @@ try {
   await clickCanvas(40, -20);
   await wait(400);
   check('Escape abandons a half-finished measurement', (await rows()).length === 0);
+
+  // #/about is a shareable URL, so it must work as a cold entry point too: the dialog over
+  // the empty state, not a page that no longer exists. Done last, because the reload it
+  // needs would strand anything that expected a model to still be open.
+  await send('Page.navigate', { url: `http://localhost:${PORT}/index.html#/about` });
+  await send('Page.reload', { ignoreCache: true });
+  await waitFor(`!!document.querySelector('[role="dialog"]')`);
+  check('the #/about deep link opens the dialog on a cold load', true);
+  check(
+    'and the empty state is behind it',
+    await evalJs(`!!document.querySelector('.empty-state')`),
+  );
 } catch (err) {
   check(`harness error: ${err.message}`, false);
 }

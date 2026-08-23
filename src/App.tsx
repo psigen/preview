@@ -1,10 +1,12 @@
 import { useCallback, useEffect, useMemo, useReducer, useRef, useState } from 'react';
+import { About } from './About';
 import { DropOverlay } from './components/DropOverlay';
 import { EmptyState } from './components/EmptyState';
 import { MeasurePanel } from './components/MeasurePanel';
 import { StatusBar } from './components/StatusBar';
 import { Viewer } from './components/Viewer';
 import { ViewToolbar } from './components/ViewToolbar';
+import { closeHashRoute, useHashRoute } from './hooks/useHashRoute';
 import { useHotkeys } from './hooks/useHotkeys';
 import { useModelLoader } from './hooks/useModelLoader';
 import { usePrefersReducedMotion } from './hooks/usePrefersReducedMotion';
@@ -22,6 +24,7 @@ export function App() {
   const [activeView, setActiveView] = useState<ViewId | null>(null);
   const apiRef = useRef<ViewApi | null>(null);
   const reduceMotion = usePrefersReducedMotion();
+  const route = useHashRoute();
 
   const [measure, dispatchMeasure] = useReducer(measureReducer, initialMeasureState);
   const [unit, setUnit] = useState<UnitChoice>('auto');
@@ -47,13 +50,15 @@ export function App() {
   useEffect(() => {
     const onKey = (event: KeyboardEvent) => {
       if (event.key !== 'Escape') return;
-      if (measure.draft.phase === 'first') dispatchMeasure({ type: 'cancelDraft' });
+      // The About dialog is modal, so it gets the key before anything behind it.
+      if (route === 'about') closeHashRoute();
+      else if (measure.draft.phase === 'first') dispatchMeasure({ type: 'cancelDraft' });
       else if (measure.selectedId !== null) dispatchMeasure({ type: 'select', id: null });
       else if (measure.mode !== 'off') dispatchMeasure({ type: 'setMode', mode: 'off' });
     };
     window.addEventListener('keydown', onKey);
     return () => window.removeEventListener('keydown', onKey);
-  }, [measure.draft.phase, measure.selectedId, measure.mode]);
+  }, [route, measure.draft.phase, measure.selectedId, measure.mode]);
 
   const zoomToMeasurement = useCallback(
     (id: number) => {
@@ -198,6 +203,8 @@ export function App() {
       </div>
 
       {dragging && <DropOverlay />}
+
+      {route === 'about' && <About onClose={closeHashRoute} />}
     </div>
   );
 }

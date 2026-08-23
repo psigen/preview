@@ -1,8 +1,50 @@
-export function About() {
+import { useEffect, useRef } from 'react';
+
+interface Props {
+  onClose(): void;
+}
+
+/**
+ * Licences and provenance, shown over the viewer rather than in place of it.
+ *
+ * An overlay specifically so the app underneath stays mounted: rendering this as a route
+ * unmounted the viewer and disposed whatever model was open.
+ */
+export function About({ onClose }: Props) {
+  const closeButton = useRef<HTMLButtonElement>(null);
+
+  useEffect(() => {
+    closeButton.current?.focus();
+  }, []);
+
   return (
-    <div className="prose-page">
-      <section className="card prose">
-        <h1>About preview</h1>
+    <div
+      className="about-overlay"
+      // Clicking the backdrop dismisses, but a click inside must not bubble out to it.
+      onClick={onClose}
+      role="presentation"
+    >
+      <section
+        className="card prose about-dialog"
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="about-title"
+        onClick={(event) => event.stopPropagation()}
+      >
+        <div className="about-head">
+          <h1 id="about-title">About preview</h1>
+          <button
+            ref={closeButton}
+            type="button"
+            className="link"
+            data-action="about-close"
+            aria-label="Close"
+            onClick={onClose}
+          >
+            ✕
+          </button>
+        </div>
+
         <p>
           A client-side 3D mesh and CAD viewer. Files are read entirely in your browser — nothing is
           uploaded to any server, and the app makes no network requests at all once it has loaded.
@@ -30,10 +72,6 @@ export function About() {
         <p>
           A build made with <code>VITE_ENABLE_CAD=0</code> omits CAD support entirely and contains
           no LGPL artifacts.
-        </p>
-
-        <p>
-          <a href="#/">← Back to the viewer</a>
         </p>
       </section>
     </div>

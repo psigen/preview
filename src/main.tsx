@@ -1,24 +1,17 @@
-import { StrictMode, useEffect, useState } from 'react';
+import { StrictMode } from 'react';
 import { createRoot } from 'react-dom/client';
 import { App } from './App';
-import { About } from './About';
 import './styles.css';
 
-// Hash routing, hand-rolled: deep links must survive a refresh on GitHub Pages, which
-// cannot rewrite paths. Same approach as videoclip's src/main.tsx.
-function Root() {
-  const [hash, setHash] = useState(window.location.hash);
-  useEffect(() => {
-    const onChange = () => setHash(window.location.hash);
-    window.addEventListener('hashchange', onChange);
-    return () => window.removeEventListener('hashchange', onChange);
-  }, []);
-  if (hash.startsWith('#/about')) return <About />;
-  return <App />;
-}
-
+/**
+ * The app is mounted once and never swapped.
+ *
+ * Routing used to render <About /> INSTEAD of <App />, which unmounted the viewer and ran
+ * its cleanup — so reading the licences disposed the loaded model and returned you to an
+ * empty state. About is an overlay now; see useHashRoute.
+ */
 createRoot(document.getElementById('root')!).render(
   <StrictMode>
-    <Root />
+    <App />
   </StrictMode>,
 );
