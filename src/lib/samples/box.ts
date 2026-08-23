@@ -10,9 +10,10 @@
  *  - Its space diagonal is rotation-invariant, which is what makes one number comparable
  *    across every format.
  */
+import type { Vec3 } from '../vec3';
+
 export const BOX_MM = Object.freeze({ x: 10, y: 20, z: 30 });
 
-export type Triple = readonly [number, number, number];
 export interface Extents {
   x: number;
   y: number;
@@ -37,7 +38,7 @@ export function extentsIn(unit: UnitName): Extents {
 }
 
 /** The 8 corners. Index bit0 = X, bit1 = Y, bit2 = Z. */
-export function corners({ x, y, z }: Extents): Triple[] {
+export function corners({ x, y, z }: Extents): Vec3[] {
   return [
     [0, 0, 0], [x, 0, 0], [x, y, 0], [0, y, 0],
     [0, 0, z], [x, 0, z], [x, y, z], [0, y, z],
@@ -45,7 +46,7 @@ export function corners({ x, y, z }: Extents): Triple[] {
 }
 
 /** 12 triangles as corner-index triples, counter-clockwise seen from outside. */
-export const TRIS: readonly Triple[] = Object.freeze([
+export const TRIS: readonly Vec3[] = Object.freeze([
   [0, 3, 2], [0, 2, 1], // -Z
   [4, 5, 6], [4, 6, 7], // +Z
   [0, 1, 5], [0, 5, 4], // -Y
@@ -55,7 +56,7 @@ export const TRIS: readonly Triple[] = Object.freeze([
 ]);
 
 /** Outward face normal per triangle, matching TRIS order. */
-export const FACE_NORMALS: readonly Triple[] = Object.freeze([
+export const FACE_NORMALS: readonly Vec3[] = Object.freeze([
   [0, 0, -1], [0, 0, -1], [0, 0, 1], [0, 0, 1],
   [0, -1, 0], [0, -1, 0], [0, 1, 0], [0, 1, 0],
   [-1, 0, 0], [-1, 0, 0], [1, 0, 0], [1, 0, 0],
@@ -65,9 +66,9 @@ export const TRIANGLE_COUNT = TRIS.length;
 export const VERTEX_COUNT = 8;
 
 /** Flat, non-indexed triangle soup: 36 vertices. */
-export function soup(ext: Extents): Triple[] {
+export function soup(ext: Extents): Vec3[] {
   const c = corners(ext);
-  const out: Triple[] = [];
+  const out: Vec3[] = [];
   for (const [a, b, d] of TRIS) out.push(c[a]!, c[b]!, c[d]!);
   return out;
 }

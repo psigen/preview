@@ -8,7 +8,8 @@
  * object URL is idempotent, but geometry.dispose() is not, and React may invoke an updater
  * twice under StrictMode.
  */
-import type { BufferGeometry, Material, Object3D, Texture } from 'three';
+import type { BufferGeometry, Material, Object3D } from 'three';
+import { texturesOf } from './materials';
 
 export interface DisposeCounts {
   geometries: number;
@@ -20,17 +21,11 @@ function disposeMaterial(material: Material, counts: DisposeCounts, seen: Set<ob
   if (seen.has(material)) return;
   seen.add(material);
 
-  // Walk every own property: a material's texture slots vary by type (map, normalMap,
-  // roughnessMap, envMap, alphaMap, ...) and hard-coding the list would silently miss any
-  // that a loader sets.
-  for (const value of Object.values(material as unknown as Record<string, unknown>)) {
-    const tex = value as Texture | null;
-    if (tex && typeof tex === 'object' && (tex as { isTexture?: boolean }).isTexture) {
-      if (seen.has(tex)) continue;
-      seen.add(tex);
-      tex.dispose();
-      counts.textures++;
-    }
+  for (const tex of texturesOf(material)) {
+    if (seen.has(tex)) continue;
+    seen.add(tex);
+    tex.dispose();
+    counts.textures++;
   }
   material.dispose();
   counts.materials++;

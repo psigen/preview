@@ -16,7 +16,8 @@ export {
   extentsIn,
   soup,
 } from '../../src/lib/samples/box';
-export type { Extents, Triple as Vec3, UnitName } from '../../src/lib/samples/box';
+export type { Extents, UnitName } from '../../src/lib/samples/box';
+export type { Vec3 } from '../../src/lib/vec3';
 
 /**
  * The space diagonal in METRES. THE cross-format invariant: a unitless STL, a Z-up 3MF in

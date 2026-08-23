@@ -1,13 +1,16 @@
 import { describe, expect, it } from 'vitest';
-import { BufferGeometry, DoubleSide, Mesh, MeshStandardMaterial, Points } from 'three';
+import { BufferGeometry, DoubleSide, Matrix4, Mesh, MeshStandardMaterial, Points } from 'three';
 import {
   DEFAULT_MATERIAL,
   buildScene,
   collectTransferables,
-  identityMat4,
+  type Mat4Array,
   type MeshPayload,
   type ScenePayload,
 } from './payload';
+
+/** Identity in the payload's column-major layout. Only tests need to build one. */
+const identityMat4 = (): Mat4Array => new Float64Array(new Matrix4().elements);
 
 const tri = (): Float32Array => new Float32Array([0, 0, 0, 1, 0, 0, 0, 1, 0]);
 

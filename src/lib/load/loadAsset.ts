@@ -36,11 +36,6 @@ export class UnsupportedFormatError extends Error {
 
 let nextId = 1;
 
-/** Reset between tests so ids stay predictable. */
-export function __resetIdsForTest(): void {
-  nextId = 1;
-}
-
 const noopProgress: ProgressReport = () => {};
 
 export async function loadAsset(input: LoadInput, options: LoadOptions = {}): Promise<LoadedModel> {
@@ -66,12 +61,9 @@ export async function loadAsset(input: LoadInput, options: LoadOptions = {}): Pr
     );
   }
 
-  const ctx: LoadContext = {
-    onProgress: options.onProgress ?? noopProgress,
-    warn: () => {},
-    signal: options.signal ?? new AbortController().signal,
-    quality: options.quality ?? DEFAULT_QUALITY,
-  };
+  const onProgress = options.onProgress ?? noopProgress;
+  const signal = options.signal ?? new AbortController().signal;
+  const quality = options.quality ?? DEFAULT_QUALITY;
 
   let lastError: unknown = null;
 
@@ -91,8 +83,10 @@ export async function loadAsset(input: LoadInput, options: LoadOptions = {}): Pr
       );
     }
 
+    // A fresh warning sink per attempt, so a failed candidate's warnings do not leak into
+    // the one that eventually succeeds.
     const collected: LoadWarning[] = [...extra];
-    const attemptCtx: LoadContext = { ...ctx, warn: (w) => collected.push(w) };
+    const attemptCtx: LoadContext = { onProgress, signal, quality, warn: (w) => collected.push(w) };
 
     try {
       const pipeline = await descriptor.pipeline();

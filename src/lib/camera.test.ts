@@ -4,7 +4,6 @@ import {
   FIT_PADDING,
   VIEW_DIRECTIONS,
   VIEW_IDS,
-  VIEW_UPS,
   cameraPositionFor,
   distanceToFitSphere,
   matchView,
@@ -30,16 +29,6 @@ describe('view directions', () => {
     // as distinct, and the sign of zero is meaningless for a direction.
     for (const [a, b] of opposites) {
       expect(VIEW_DIRECTIONS[a].map((v) => -v + 0)).toEqual([...VIEW_DIRECTIONS[b]]);
-    }
-  });
-
-  it('documents the CAD drawing-sheet convention for top and bottom', () => {
-    // Top looks down -Y, so screen-up is -Z; bottom is its mirror. Derived by
-    // CameraControls' makeSafe() + lookAt, recorded here so a regression is visible.
-    expect(VIEW_UPS.top).toEqual([0, 0, -1]);
-    expect(VIEW_UPS.bottom).toEqual([0, 0, 1]);
-    for (const id of ['front', 'back', 'left', 'right', 'iso'] as ViewId[]) {
-      expect(VIEW_UPS[id], id).toEqual([0, 1, 0]);
     }
   });
 

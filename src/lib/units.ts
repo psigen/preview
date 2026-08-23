@@ -52,8 +52,8 @@ export const UNITS: Readonly<Record<UnitId, UnitDef>> = Object.freeze({
   u:  { id: 'u',  label: 'unit',       plural: 'units',       metersPer: NaN,  abstract: true,  minDecimals: 2, maxDecimals: 4 },
 });
 
-export const METRIC_UNITS: readonly UnitId[] = ['mm', 'cm', 'm', 'km'];
-export const IMPERIAL_UNITS: readonly UnitId[] = ['in', 'ft'];
+const METRIC_UNITS: readonly UnitId[] = ['mm', 'cm', 'm', 'km'];
+const IMPERIAL_UNITS: readonly UnitId[] = ['in', 'ft'];
 
 /* ------------------------------------------------------------------ conversion */
 

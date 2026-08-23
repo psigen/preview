@@ -7,25 +7,13 @@
  */
 import type { Object3D, BufferGeometry, Material } from 'three';
 import { computeBounds } from '../bounds';
+import { texturesOf } from './materials';
 import type { AssetStats } from './types';
 
 interface CountInput {
   readonly bytes: number;
   readonly parseMs: number;
   readonly animations: number;
-}
-
-function isMaterialArray(m: Material | Material[]): m is Material[] {
-  return Array.isArray(m);
-}
-
-/** Every texture-valued property on a material, so the count matches what dispose() frees. */
-function countTextures(material: Material, into: Set<object>): void {
-  for (const value of Object.values(material as unknown as Record<string, unknown>)) {
-    if (value && typeof value === 'object' && (value as { isTexture?: boolean }).isTexture) {
-      into.add(value as object);
-    }
-  }
 }
 
 export function computeStats(root: Object3D, input: CountInput): AssetStats {
@@ -53,10 +41,10 @@ export function computeStats(root: Object3D, input: CountInput): AssetStats {
     if (!geometry?.attributes?.position) return;
 
     if (node.material) {
-      const list = isMaterialArray(node.material) ? node.material : [node.material];
+      const list: Material[] = Array.isArray(node.material) ? node.material : [node.material];
       for (const m of list) {
         materials.add(m);
-        countTextures(m, textures);
+        for (const tex of texturesOf(m)) textures.add(tex);
       }
     }
 

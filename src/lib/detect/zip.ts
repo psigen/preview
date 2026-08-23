@@ -11,12 +11,12 @@
  *  28  uint16LE  extra field length
  *  30  file name bytes
  */
-export const ZIP_LOCAL_HEADER = 0x04034b50;
+const ZIP_LOCAL_HEADER = 0x04034b50;
 /** Empty archive ('PK\x05\x06') and spanned archive ('PK\x07\x08') — valid ZIPs, no first entry. */
-export const ZIP_END_OF_CENTRAL_DIR = 0x06054b50;
-export const ZIP_SPANNED = 0x08074b50;
+const ZIP_END_OF_CENTRAL_DIR = 0x06054b50;
+const ZIP_SPANNED = 0x08074b50;
 
-export function zipSignature(view: DataView): number | null {
+function zipSignature(view: DataView): number | null {
   if (view.byteLength < 4) return null;
   const sig = view.getUint32(0, true);
   return sig === ZIP_LOCAL_HEADER || sig === ZIP_END_OF_CENTRAL_DIR || sig === ZIP_SPANNED

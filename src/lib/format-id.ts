@@ -17,7 +17,3 @@ export const FORMAT_IDS = [
 ] as const;
 
 export type FormatId = (typeof FORMAT_IDS)[number];
-
-export function isFormatId(value: string): value is FormatId {
-  return (FORMAT_IDS as readonly string[]).includes(value);
-}

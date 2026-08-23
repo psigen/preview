@@ -9,6 +9,3 @@ import { createRegistry } from './registry';
  * module sits behind the descriptor's dynamic `pipeline()` import.
  */
 export const registry = createRegistry([stlDescriptor, plyDescriptor]);
-
-export { createRegistry } from './registry';
-export type * from './types';

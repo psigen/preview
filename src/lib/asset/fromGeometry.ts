@@ -18,9 +18,20 @@ type AnyAttribute = BufferAttribute | InterleavedBufferAttribute;
 function asFloat32(attribute: AnyAttribute | undefined, itemSize: number): Float32Array | undefined {
   if (!attribute) return undefined;
   if (attribute.itemSize !== itemSize) return undefined;
-  const array = (attribute as BufferAttribute).array;
-  if (array instanceof Float32Array) return array;
-  // Interleaved or a wider type: materialise a plain packed copy rather than guess.
+
+  // The fast path is only safe for a plain, un-normalised BufferAttribute whose storage is
+  // already Float32. An InterleavedBufferAttribute's `.array` getter returns the WHOLE
+  // shared buffer — every other attribute's values included — so taking it verbatim would
+  // hand back sheared geometry that renders as garbage rather than failing. glTF produces
+  // interleaved accessors routinely, so this is not a theoretical case.
+  const interleaved = (attribute as InterleavedBufferAttribute).isInterleavedBufferAttribute === true;
+  if (!interleaved && !attribute.normalized) {
+    const array = (attribute as BufferAttribute).array;
+    if (array instanceof Float32Array) return array;
+  }
+
+  // Otherwise materialise a plain packed copy, going through the accessors so that
+  // interleaving, normalisation and integer storage are all handled by three.
   const out = new Float32Array(attribute.count * itemSize);
   for (let i = 0; i < attribute.count; i++) {
     out[i * itemSize] = attribute.getX(i);

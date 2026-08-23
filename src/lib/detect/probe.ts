@@ -44,14 +44,15 @@ function looksTextual(head: Uint8Array): boolean {
   return true;
 }
 
-export function extensionOf(name: string): string {
-  const base = name.toLowerCase().split(/[\\/]/).pop() ?? '';
-  const dot = base.lastIndexOf('.');
-  return dot > 0 ? base.slice(dot) : '';
-}
-
 export function basenameOf(name: string): string {
   return (name.toLowerCase().split(/[\\/]/).pop() ?? '').trim();
+}
+
+export function extensionOf(name: string): string {
+  const base = basenameOf(name);
+  const dot = base.lastIndexOf('.');
+  // dot > 0, not >= 0: a leading dot makes a dotfile, not an extension.
+  return dot > 0 ? base.slice(dot) : '';
 }
 
 export function makeProbe(name: string, bytes: ArrayBuffer | Uint8Array): Probe {

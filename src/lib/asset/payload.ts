@@ -13,7 +13,6 @@ import {
   Group,
   LineBasicMaterial,
   LineSegments,
-  Matrix4,
   Mesh,
   MeshStandardMaterial,
   Object3D,
@@ -244,9 +243,4 @@ export function buildScene(payload: ScenePayload): Object3D {
   });
 
   return objects[0]!;
-}
-
-/** Identity matrix in the payload's column-major layout. */
-export function identityMat4(): Mat4Array {
-  return new Float64Array(new Matrix4().elements);
 }

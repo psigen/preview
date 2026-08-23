@@ -2,6 +2,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Viewer } from './components/Viewer';
 import { ViewToolbar } from './components/ViewToolbar';
 import { computeBounds } from './lib/bounds';
+import { assessModel } from './lib/limits';
 import type { ViewId } from './lib/camera';
 import { loadAsset, singleFileInput } from './lib/load/loadAsset';
 import { SAMPLES, sampleById } from './lib/samples';
@@ -59,6 +60,10 @@ export function App() {
   }, [sampleId]);
 
   const bounds = useMemo(() => (model ? computeBounds(model.object) : null), [model]);
+  const assessment = useMemo(
+    () => (model ? assessModel(model.stats.triangles, model.stats.bytes) : null),
+    [model],
+  );
   const mpu = model?.units.known ? model.units.metersPerUnit : null;
   const diagonal = model ? Math.hypot(...model.stats.size) : 0;
 
@@ -166,6 +171,11 @@ export function App() {
               </div>
             ))}
           </dl>
+          {assessment?.messages.map((m) => (
+            <p className="hint warn" key={m}>
+              {m}
+            </p>
+          ))}
           {model && model.warnings.length > 0 && (
             <ul className="warning-list">
               {model.warnings.map((w) => (

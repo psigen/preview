@@ -54,8 +54,7 @@ export function CameraRig({ bounds, apiRef, onActiveViewChange, reduceMotion = f
    */
   const fitSphere = useMemo(
     () => new Sphere(new Vector3(center[0], center[1], center[2]), safeRadius(bounds) * FIT_PADDING),
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-    [center[0], center[1], center[2], bounds.sphere.radius],
+    [bounds, center],
   );
 
   const fitDistance = useCallback(() => {
@@ -120,7 +119,9 @@ export function CameraRig({ bounds, apiRef, onActiveViewChange, reduceMotion = f
     controls.minDistance = minDistance;
     controls.maxDistance = maxDistance;
     applyView('iso', false);
-    // Only when the model itself changes — not on every camera move.
+    // Deliberately keyed on the model alone. applyView is excluded because it changes with
+    // the viewport size, and including it would re-frame the model on every window resize,
+    // throwing away wherever the user had orbited to.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [bounds]);
 

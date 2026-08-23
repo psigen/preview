@@ -19,10 +19,9 @@ const ISO = 1 / Math.sqrt(3);
  *
  * There are no quaternions here and we never write `camera.up`. CameraControls converts a
  * position + target into spherical coordinates and calls `makeSafe()` (clamping the polar
- * angle to [1e-6, PI-1e-6]) before `lookAt`, so the top and bottom views resolve to a
- * screen-up of -Z and +Z respectively — the CAD drawing-sheet convention — without ever
- * entering the degenerate pole. VIEW_UPS records that derived result for documentation and
- * for matchView's tie-breaking; it is not imposed on the camera.
+ * angle to [1e-6, PI-1e-6]) before `lookAt`. Top and bottom therefore resolve to a screen-up
+ * of -Z and +Z respectively — the CAD drawing-sheet convention — without ever entering the
+ * degenerate pole. That is a property of camera-controls, not something we impose.
  */
 export const VIEW_DIRECTIONS: Readonly<Record<ViewId, Vec3>> = Object.freeze({
   front: [0, 0, 1],
@@ -32,17 +31,6 @@ export const VIEW_DIRECTIONS: Readonly<Record<ViewId, Vec3>> = Object.freeze({
   top: [0, 1, 0],
   bottom: [0, -1, 0],
   iso: [ISO, ISO, ISO],
-});
-
-/** The screen-up that each view resolves to. Derived, not imposed — see VIEW_DIRECTIONS. */
-export const VIEW_UPS: Readonly<Record<ViewId, Vec3>> = Object.freeze({
-  front: [0, 1, 0],
-  back: [0, 1, 0],
-  right: [0, 1, 0],
-  left: [0, 1, 0],
-  top: [0, 0, -1],
-  bottom: [0, 0, 1],
-  iso: [0, 1, 0],
 });
 
 /** Fraction of extra room left around a fitted model. */

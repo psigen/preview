@@ -3,8 +3,8 @@ import { zipSync } from 'three/addons/libs/fflate.module.js';
 import { extentsIn } from '../../../test/gen/box';
 import * as W from '../../../test/gen/writers';
 import { FORMAT_IDS, type FormatId } from '../format-id';
-import { makeProbe, extensionOf, basenameOf, BINARY_SNIFF_BYTES } from './probe';
-import { firstZipEntryName, isZip, zipSignature } from './zip';
+import { makeProbe, extensionOf, basenameOf, BINARY_SNIFF_BYTES, PROBE_BYTES } from './probe';
+import { firstZipEntryName, isZip } from './zip';
 import { detectFormat, SNIFFERS, acceptAttribute, formatsForExtension } from './detect';
 
 const mm = extentsIn('millimeter');
@@ -42,7 +42,7 @@ describe('probe', () => {
     const big = new Uint8Array(20_000).fill(0x41);
     const p = makeProbe('a.txt', big.buffer as ArrayBuffer);
     expect(p.size).toBe(20_000);
-    expect(p.head.length).toBe(8192);
+    expect(p.head.length).toBe(PROBE_BYTES);
   });
 });
 
@@ -59,7 +59,7 @@ describe('zip header reading', () => {
   it('recognises an empty archive as a ZIP but yields no first entry', () => {
     const empty = new Uint8Array([0x50, 0x4b, 0x05, 0x06, ...new Array(18).fill(0)]);
     const view = new DataView(empty.buffer);
-    expect(zipSignature(view)).not.toBeNull();
+    expect(isZip(view)).toBe(true);
     expect(firstZipEntryName(empty, view)).toBeNull();
   });
 
