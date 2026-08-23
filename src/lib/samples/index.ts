@@ -101,11 +101,17 @@ function glb(ext: Extents): ArrayBuffer {
   return buf;
 }
 
-/** A USDA stage declaring millimetres and Z-up, so the sample exercises both conversions. */
+/**
+ * A USDA stage declaring millimetres and Z-up, so the sample exercises both conversions.
+ *
+ * Authored plainly — 10 x 20 x 30 with the height on Z, exactly as a Z-up tool would write
+ * it. The test fixture in test/gen deliberately pre-swaps its extents so that world bounds
+ * stay comparable across formats; a SAMPLE should not, because then its reported
+ * as-authored dimensions would disagree with the STEP sample of the same box.
+ */
 function usda(metersPerUnit: number, upAxis: 'Y' | 'Z'): ArrayBuffer {
   const s = 1e-3 / metersPerUnit;
-  const base = { x: BOX_MM.x * s, y: BOX_MM.y * s, z: BOX_MM.z * s };
-  const e: Extents = upAxis === 'Z' ? { x: base.x, y: base.z, z: base.y } : base;
+  const e: Extents = { x: BOX_MM.x * s, y: BOX_MM.y * s, z: BOX_MM.z * s };
   const pts = corners(e).map((v) => `(${v[0]}, ${v[1]}, ${v[2]})`).join(', ');
   const bytes = enc.encode(`#usda 1.0
 (
@@ -130,7 +136,24 @@ export interface SampleModel {
   /** Shown in the picker. */
   readonly label: string;
   readonly fileName: string;
-  bytes(): ArrayBuffer;
+  /** Generated in code. Mutually exclusive with `url`. */
+  bytes?(): ArrayBuffer;
+  /**
+   * Served from public/samples instead, for anything too large or too fiddly to generate —
+   * a STEP B-rep is 10 kB of text that would otherwise sit in the bundle for everyone.
+   * Same-origin, so the app still makes no external request.
+   */
+  readonly url?: string;
+}
+
+/** Resolve a sample to bytes, whether it is generated or served. */
+export async function sampleBytes(sample: SampleModel): Promise<ArrayBuffer> {
+  if (sample.bytes) return sample.bytes();
+  if (!sample.url) throw new Error(`sample "${sample.id}" has neither bytes nor a url`);
+  const base = import.meta.env.BASE_URL || './';
+  const response = await fetch(new URL(`${base}${sample.url}`, window.location.href));
+  if (!response.ok) throw new Error(`Could not load the ${sample.label} sample.`);
+  return response.arrayBuffer();
 }
 
 const scaled = (factor: number) => ({
@@ -178,6 +201,12 @@ export const SAMPLES: readonly SampleModel[] = [
     label: 'Box, USD stage in millimetres, Z-up',
     fileName: 'sample-box.usda',
     bytes: () => usda(0.001, 'Z'),
+  },
+  {
+    id: 'step',
+    label: 'Box, STEP solid in millimetres (CAD)',
+    fileName: 'sample-box.step',
+    url: 'samples/box-mm.step',
   },
   {
     id: 'ply',

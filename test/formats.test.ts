@@ -8,7 +8,7 @@
  */
 import { readdirSync, readFileSync } from 'node:fs';
 import { join } from 'node:path';
-import { describe, expect, it, vi } from 'vitest';
+import { beforeAll, describe, expect, it, vi } from 'vitest';
 import { Quaternion, Vector3 } from 'three';
 import { CASES } from './cases';
 import { DIAGONAL_ABSTRACT } from './gen/box';
@@ -20,6 +20,13 @@ import { buildScene } from '../src/lib/asset/payload';
 import { computeStats } from '../src/lib/asset/stats';
 import { loadAsset, singleFileInput, UnsupportedFormatError } from '../src/lib/load/loadAsset';
 import type { Vec3 } from '../src/lib/vec3';
+import { primeOcct } from './occt';
+
+// The browser fetches the CAD wasm from public/vendor; Node reads it from node_modules.
+// Priming the singleton once here means the pipeline under test needs no special casing.
+beforeAll(async () => {
+  await primeOcct();
+});
 
 /** Build the loader input for a case, wiring up any sidecars it declares. */
 function inputFor(testCase: (typeof CASES)[number]) {
@@ -170,7 +177,7 @@ describe('payload counts agree with the built scene', () => {
         quality: DEFAULT_QUALITY,
       },
     );
-    const derived = computeStats(buildScene(out.scene), { bytes: 0, parseMs: 0, animations: 0 });
+    const derived = computeStats(buildScene(out.scene), { bytes: 0, parseMs: 0, animations: 0, sourceSize: [0, 0, 0] });
 
     expect(out.counts.triangles).toBe(derived.triangles);
     expect(out.counts.vertices).toBe(derived.vertices);

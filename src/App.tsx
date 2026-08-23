@@ -16,7 +16,7 @@ import type { DroppedFile } from './lib/dnd';
 import { filesFromList } from './lib/dropEntries';
 import { assessModel } from './lib/limits';
 import { initialMeasureState, measureReducer, sphereAround } from './lib/measure';
-import { sampleById } from './lib/samples';
+import { sampleById, sampleBytes } from './lib/samples';
 import { formatDims, formatLength, type UnitChoice } from './lib/units';
 import type { ViewApi } from './types';
 
@@ -71,8 +71,9 @@ export function App() {
   const openSample = useCallback(
     (id: string) => {
       const sample = sampleById(id);
-      const file = new File([sample.bytes()], sample.fileName);
-      open([{ path: sample.fileName, file }]);
+      void sampleBytes(sample).then((bytes) => {
+        open([{ path: sample.fileName, file: new File([bytes], sample.fileName) }]);
+      });
     },
     [open],
   );
@@ -92,7 +93,8 @@ export function App() {
           ['Format', model.format.toUpperCase()],
           ['Triangles', model.stats.triangles.toLocaleString('en-US')],
           ['Points', model.stats.points.toLocaleString('en-US')],
-          ['Dimensions', formatDims(model.stats.size, mpu)],
+          // As authored, not as rotated: see AssetStats.sourceSize.
+          ['Dimensions', formatDims(model.stats.sourceSize, mpu)],
           ['Diagonal', formatLength(Math.hypot(...model.stats.size), mpu).text],
           ['Units', model.units.known ? 'declared' : 'not declared'],
         ]
@@ -128,6 +130,9 @@ export function App() {
               </p>
               {/* Replacing a model never goes through the empty state: the window-wide drop
                   target is armed whenever nothing is loading, and this is its click twin. */}
+              <a className="about-link" href="#/about">
+                About &amp; licences
+              </a>
               <button
                 type="button"
                 className="link"

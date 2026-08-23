@@ -9,8 +9,15 @@
 import type { WarningCode } from '../src/lib/asset/types';
 import type { FormatId } from '../src/lib/format-id';
 import type { Vec3 } from '../src/lib/vec3';
+import { readFileSync } from 'node:fs';
+import { join } from 'node:path';
 import { extentsIn } from './gen/box';
 import * as W from './gen/writers';
+
+const fixture = (name: string): ArrayBuffer => {
+  const b = readFileSync(join(import.meta.dirname, 'fixtures', name));
+  return b.buffer.slice(b.byteOffset, b.byteOffset + b.byteLength) as ArrayBuffer;
+};
 
 const mm = extentsIn('millimeter');
 
@@ -51,6 +58,16 @@ const METRIC_BOUNDS_FROM_Z_UP = {
   max: [0.01, 0.02, 0] as Vec3,
 };
 
+/**
+ * CAD is authored Z-up with the box at 10 x 20 x 30 mm, so after the same rotation the
+ * height lands on Y: (x, y, z) -> (x, z, -y) maps 0.01 x 0.02 x 0.03 to 0.01 x 0.03 x 0.02.
+ * Different bounds from the USD case, identical diagonal — which is the point.
+ */
+const CAD_BOUNDS_FROM_Z_UP = {
+  min: [0, 0, -0.02] as Vec3,
+  max: [0.01, 0.03, 0] as Vec3,
+};
+
 /** Every unitless triangle mesh of the canonical box shares these expectations. */
 const unitlessMesh = (over: Partial<FormatCase> & Pick<FormatCase, 'name' | 'format' | 'fileName' | 'bytes' | 'strongSniff'>): FormatCase => ({
   expectTriangles: 12,
@@ -65,6 +82,57 @@ const unitlessMesh = (over: Partial<FormatCase> & Pick<FormatCase, 'name' | 'for
 });
 
 export const CASES: readonly FormatCase[] = [
+  {
+    name: 'STEP declaring millimetres',
+    format: 'step',
+    fileName: 'box-mm.step',
+    bytes: () => fixture('box-mm.step'),
+    strongSniff: true,
+    expectTriangles: 12,
+    expectPoints: 0,
+    expectMeshes: 1,
+    expectBounds: CAD_BOUNDS_FROM_Z_UP,
+    // OCCT is asked for metres and converts from whatever the file declared.
+    expectMetersPerUnit: 1,
+    expectSourceUpAxis: 'Z',
+    expectBakedScale: 1,
+    expectWarnings: [],
+  },
+  {
+    name: 'IGES surfaces',
+    format: 'iges',
+    fileName: 'box-mm.igs',
+    // Six untrimmed bilinear patches. Proves the OCCT IGES reader path and, with the STEP
+    // pair, that both entry points land on the same physical box.
+    bytes: () => fixture('box-mm.igs'),
+    // Column 73 is a weak signal at best, so a renamed IGES is not expected to be found.
+    strongSniff: false,
+    expectTriangles: 12,
+    expectPoints: 0,
+    expectMeshes: 6,
+    expectBounds: CAD_BOUNDS_FROM_Z_UP,
+    expectMetersPerUnit: 1,
+    expectSourceUpAxis: 'Z',
+    expectBakedScale: 1,
+    expectWarnings: [],
+  },
+  {
+    name: 'STEP declaring inches',
+    format: 'step',
+    fileName: 'box-inch.step',
+    // The same physical box, declared in inches. If OCCT ever stops reading a file's own
+    // unit, this case and the millimetre one stop agreeing.
+    bytes: () => fixture('box-inch.step'),
+    strongSniff: true,
+    expectTriangles: 12,
+    expectPoints: 0,
+    expectMeshes: 1,
+    expectBounds: CAD_BOUNDS_FROM_Z_UP,
+    expectMetersPerUnit: 1,
+    expectSourceUpAxis: 'Z',
+    expectBakedScale: 1,
+    expectWarnings: [],
+  },
   {
     name: 'GLB',
     format: 'gltf',

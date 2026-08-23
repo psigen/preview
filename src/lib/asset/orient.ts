@@ -11,6 +11,7 @@
  * a Z-up stage) is not rotated twice.
  */
 import { Group, Matrix4, Object3D } from 'three';
+import type { Vec3 } from '../vec3';
 import type { Orientation, UpAxis } from './types';
 
 /** Rotating -90 degrees about X maps a Z-up frame onto a Y-up one: (x,y,z) -> (x, z, -y). */
@@ -40,6 +41,22 @@ export function wrapForUpAxis(
   wrapper.add(root);
   wrapper.updateMatrixWorld(true);
   return wrapper;
+}
+
+/**
+ * World-space extents expressed back along the file's own axes.
+ *
+ * A Y-up world puts the height on Y, so a Z-up model's world bounds have their last two
+ * components swapped relative to how it was drawn. Undoing that is what lets the info panel
+ * show a CAD part as the 10 x 20 x 30 its drawing states rather than the 10 x 30 x 20 the
+ * viewer happens to be holding.
+ *
+ * Derived from the WORLD size rather than measured before wrapping, so it does not matter
+ * whether we applied the rotation or the loader did — three's USDLoader rotates a Z-up stage
+ * itself, and both paths must report the same thing for the same part.
+ */
+export function sizeInSourceAxes(worldSize: Vec3, sourceUpAxis: UpAxis): Vec3 {
+  return sourceUpAxis === 'Z' ? [worldSize[0], worldSize[2], worldSize[1]] : worldSize;
 }
 
 /**

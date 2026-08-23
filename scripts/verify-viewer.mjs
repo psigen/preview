@@ -221,7 +221,7 @@ try {
   const plyFrame = await shot();
   check('a PLY sample loads and renders', inkPct(plyFrame) > 2, `${inkPct(plyFrame).toFixed(1)}% ink`);
 
-  // The two headline formats, each checked for the thing that makes it distinctive.
+  // The headline formats, each checked for the thing that makes it distinctive.
   const statOf = (name) => evalJs(`document.querySelector('[data-stat="${name}"]')?.textContent ?? ''`);
 
   await reload();
@@ -246,6 +246,22 @@ try {
   // The stage is authored in millimetres AND Z-up; both conversions must land it at
   // 10 x 20 x 30 mm, upright, the same as every other format of the same box.
   check('USD converts its stage units and up-axis', /^10\.000 × 20\.000 × 30\.000 mm$/.test(usdDims), usdDims);
+
+  // A STEP solid: the stretch goal, and the case where the ruler finally reports a real
+  // physical length from a CAD file rather than from a format that merely mandates metres.
+  await reload();
+  await click('[data-sample="step"]');
+  await waitFor(`!!document.querySelector('[data-view="iso"]')`, 200);
+  await click('[data-view="iso"]');
+  const stepFrame = await shot();
+  check('a STEP sample loads and renders', inkPct(stepFrame) > 2, `${inkPct(stepFrame).toFixed(1)}% ink`);
+  check('STEP tessellates to 12 triangles', (await statOf('triangles')) === '12');
+  const stepDims = await statOf('dimensions');
+  check(
+    'STEP reports the declared physical size',
+    /^10\.000 × 20\.000 × 30\.000 mm$/.test(stepDims),
+    stepDims,
+  );
 
   // 2. Every view button.
   await reload();

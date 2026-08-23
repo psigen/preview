@@ -95,8 +95,16 @@ export interface AssetStats {
   readonly hasVertexColors: boolean;
   /** WORLD-space axis-aligned bounds, in world units. Never recentred. */
   readonly bounds: { readonly min: Vec3; readonly max: Vec3 };
-  /** bounds.max - bounds.min. */
+  /** bounds.max - bounds.min, along WORLD axes. What the camera frames. */
   readonly size: Vec3;
+  /**
+   * Extents along the MODEL'S OWN axes, before up-axis normalisation.
+   *
+   * This is what the info panel shows, and it is deliberately not `size`: a Z-up CAD part
+   * measuring 10 x 20 x 30 on its drawing has world bounds of 10 x 30 x 20 once rotated
+   * upright, and showing that to someone holding the drawing reads as a bug.
+   */
+  readonly sourceSize: Vec3;
   /** False when the model has no finite geometry — guards the camera against NaN. */
   readonly valid: boolean;
   /** Byte length of the source file. */

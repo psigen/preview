@@ -7,7 +7,7 @@
  */
 import type { FormatId } from '../format-id';
 import { disposeObject } from '../asset/dispose';
-import { worldFromFile, wrapForUpAxis } from '../asset/orient';
+import { sizeInSourceAxes, worldFromFile, wrapForUpAxis } from '../asset/orient';
 import { computeStats } from '../asset/stats';
 import type { LoadedModel, LoadWarning, RawAsset } from '../asset/types';
 import { warn } from '../asset/types';
@@ -25,11 +25,13 @@ export function finalize(raw: RawAsset, meta: FinalizeMeta): LoadedModel {
   const wrapper = wrapForUpAxis(raw.object, raw.orientation, raw.sourceUpAxis, meta.name);
   const matrix = worldFromFile(raw.object);
   const animations = raw.animations ?? [];
-  const stats = computeStats(wrapper, {
+  const measured = computeStats(wrapper, {
     bytes: meta.bytes,
     parseMs: meta.parseMs,
     animations: animations.length,
+    sourceSize: [0, 0, 0],
   });
+  const stats = { ...measured, sourceSize: sizeInSourceAxes(measured.size, raw.sourceUpAxis) };
 
   const warnings: LoadWarning[] = [...(raw.warnings ?? [])];
 

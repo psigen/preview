@@ -568,3 +568,10 @@ progress {
   border-color: var(--good);
   color: var(--good);
 }
+
+.about-link {
+  display: block;
+  margin-top: 4px;
+  font-size: 12px;
+  color: var(--accent);
+}

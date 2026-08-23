@@ -94,6 +94,18 @@ must not touch the DOM, so it can run in a worker; `scene` returns an Object3D o
 thread and may use the DOM. Every format that needs textures, DOMParser or `window` has to
 be `scene`.
 
+## CAD dimensions are reported as authored
+
+`AssetStats.size` is the world-space bounding box, which is what the camera frames.
+`sourceSize` is the same extents expressed along the FILE's axes, and that is what the info
+panel shows — a Z-up part measuring 10 × 20 × 30 on its drawing has world bounds of
+10 × 30 × 20 once rotated upright.
+
+It is derived from the world size by one rule in `sizeInSourceAxes`, deliberately not by
+measuring before the wrapper is applied. Both paths must agree, and only some formats are
+rotated by us: three's USDLoader rotates a Z-up stage itself, so measuring "before our
+wrapper" would give a different answer for USD than for STEP describing the same part.
+
 ## The ruler renders without re-rendering
 
 The live hover point lives in a REF, never in state, and the ghost marker and dashed line

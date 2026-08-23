@@ -1,5 +1,7 @@
 import { gltfDescriptor } from '../formats/gltf/descriptor';
+import { igesDescriptor } from '../formats/iges/descriptor';
 import { plyDescriptor } from '../formats/ply/descriptor';
+import { stepDescriptor } from '../formats/step/descriptor';
 import { stlDescriptor } from '../formats/stl/descriptor';
 import { usdDescriptor } from '../formats/usd/descriptor';
 import { createRegistry } from './registry';
@@ -18,9 +20,10 @@ import type { FormatDescriptor } from './types';
  */
 const cadEnabled = import.meta.env.VITE_ENABLE_CAD !== '0';
 
-const CAD_DESCRIPTORS: FormatDescriptor[] = [
-  // step, iges and brep land here with the occt pipeline.
-];
+// BREP is deliberately absent: it is an Open CASCADE working format that was never asked
+// for, and there is no fixture, so registering it would ship an untested path. The sniffer
+// still knows it, so a dropped .brep gets "recognised but not supported yet".
+const CAD_DESCRIPTORS: FormatDescriptor[] = [stepDescriptor, igesDescriptor];
 
 export const registry = createRegistry([
   usdDescriptor,

@@ -31,10 +31,11 @@ and the format-detection library; the viewer, loader plugins and ruler are still
 | **USD, glTF/GLB, STL, PLY** | done |
 | Drag-and-drop, folder drop, in-place replacement | done |
 | **Measurement ruler** | done |
-| OBJ, 3MF, FBX, STEP/IGES | not yet |
+| **STEP and IGES** (the CAD stretch goal) | done |
+| OBJ, 3MF, FBX | not yet |
 
-492 unit tests pass headless across a Node tier and a jsdom tier, plus a
-43-check end-to-end verification (`npm run verify:viewer`) that drives the real
+545 unit tests pass headless across a Node tier and a jsdom tier, plus a
+46-check end-to-end verification (`npm run verify:viewer`) that drives the real
 UI in headless Chrome, including a calibrated geometry-leak check.
 
 The four must-have formats all load. A 10 × 20 × 30 mm box reads identically whether it
@@ -78,9 +79,8 @@ npm run verify:viewer # end-to-end camera checks in headless Chrome (needs a bui
 | --- | --- | --- | --- |
 | OpenUSD | `.usd` `.usda` `.usdc` `.usdz` | three `USDLoader` — **working** | declared (`metersPerUnit`) |
 | glTF 2.0 | `.gltf` `.glb` | three `GLTFLoader` + Draco / KTX2 / meshopt — **working** | metres, per spec |
-| STEP | `.step` `.stp` | `occt-import-js` (wasm) | declared, converted by OCCT |
-| IGES | `.iges` `.igs` | `occt-import-js` (wasm) | declared, converted by OCCT |
-| BREP | `.brep` `.brp` | `occt-import-js` (wasm) | declared |
+| STEP | `.step` `.stp` | `occt-import-js` (wasm) — **working** | declared, converted by OCCT |
+| IGES | `.iges` `.igs` | `occt-import-js` (wasm) — **working** | declared, converted by OCCT |
 | 3MF | `.3mf` | three `3MFLoader` | declared (`unit` attribute) |
 | STL | `.stl` | three `STLLoader` — **working** | none — abstract |
 | PLY | `.ply` | three `PLYLoader` — **working** | none — abstract |
@@ -118,6 +118,10 @@ invent one when it doesn't:
 
 Verified end to end: the same two clicks on a USD stage authored in millimetres report
 `6.631 mm`, and on an STL report `6.8052 u`.
+
+Dimensions are reported along the model's **own** axes, not the viewer's. A Z-up CAD part
+measuring 10 × 20 × 30 on its drawing has world bounds of 10 × 30 × 20 once rotated upright,
+and showing that to someone holding the drawing reads as a bug.
 
 A model is never rescaled to fit the view; the camera fits to the model instead. Up-axis
 correction is a rotation, which cannot change a distance, so a measurement reads the same

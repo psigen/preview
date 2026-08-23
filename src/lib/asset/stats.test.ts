@@ -5,7 +5,7 @@ import {
 } from 'three';
 import { computeStats } from './stats';
 
-const META = { bytes: 0, parseMs: 0, animations: 0 };
+const META = { bytes: 0, parseMs: 0, animations: 0, sourceSize: [0, 0, 0] as const };
 
 function geom(triangles: number, opts: { indexed?: boolean; groups?: number } = {}): BufferGeometry {
   const verts = triangles * 3;
@@ -119,7 +119,7 @@ describe('attribute and resource reporting', () => {
   it('passes through byte size, parse time and animation count', () => {
     const root = new Group();
     root.add(new Mesh(geom(1), new MeshStandardMaterial()));
-    const s = computeStats(root, { bytes: 4096, parseMs: 17, animations: 3 });
+    const s = computeStats(root, { ...META, bytes: 4096, parseMs: 17, animations: 3 });
     expect(s.bytes).toBe(4096);
     expect(s.parseMs).toBe(17);
     expect(s.animations).toBe(3);

@@ -6,6 +6,7 @@
  * reading local-space geometry would silently report centimetres for a metre-scale model.
  */
 import type { Object3D, BufferGeometry, Material } from 'three';
+import type { Vec3 } from '../vec3';
 import { computeBounds } from '../bounds';
 import { texturesOf } from './materials';
 import type { AssetStats } from './types';
@@ -14,6 +15,8 @@ interface CountInput {
   readonly bytes: number;
   readonly parseMs: number;
   readonly animations: number;
+  /** Extents in the model's own frame, measured before the up-axis wrapper was applied. */
+  readonly sourceSize: Vec3;
 }
 
 export function computeStats(root: Object3D, input: CountInput): AssetStats {
@@ -86,6 +89,7 @@ export function computeStats(root: Object3D, input: CountInput): AssetStats {
     hasVertexColors,
     bounds: { min: bounds.min, max: bounds.max },
     size: bounds.size,
+    sourceSize: input.sourceSize,
     valid: bounds.valid,
     bytes: input.bytes,
     parseMs: input.parseMs,

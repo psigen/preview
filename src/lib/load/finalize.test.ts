@@ -119,6 +119,53 @@ describe('the canonical diagonal survives orientation and units', () => {
     }
   });
 
+  /**
+   * The world bounds of a Z-up part legitimately have their axes swapped once it is rotated
+   * upright. Reporting THAT as the part's dimensions contradicts its drawing, so the panel
+   * uses sourceSize instead.
+   */
+  it('reports dimensions as authored, not as rotated', () => {
+    const zUp = fin(stubRawAsset({ extents: [10, 20, 30], sourceUpAxis: 'Z' }));
+    // World: the rotation moved the 30 onto Y.
+    expect(zUp.stats.size[1]).toBeCloseTo(30, 6);
+    expect(zUp.stats.size[2]).toBeCloseTo(20, 6);
+    // As authored: unchanged.
+    expect(zUp.stats.sourceSize[0]).toBeCloseTo(10, 6);
+    expect(zUp.stats.sourceSize[1]).toBeCloseTo(20, 6);
+    expect(zUp.stats.sourceSize[2]).toBeCloseTo(30, 6);
+  });
+
+  it('leaves a Y-up model identical in both frames', () => {
+    const yUp = fin(stubRawAsset({ extents: [10, 20, 30], sourceUpAxis: 'Y' }));
+    expect([...yUp.stats.sourceSize]).toEqual([...yUp.stats.size].map((v) => v));
+  });
+
+  /**
+   * The same physical Z-up part must report the same dimensions whether WE rotated it
+   * (orientation 'file', as STEP and STL need) or the loader already had (orientation
+   * 'y-up', which three's USDLoader does for a Z-up stage).
+   */
+  it('agrees on as-authored dimensions however the rotation was applied', () => {
+    const weRotated = fin(stubRawAsset({ extents: [10, 20, 30], sourceUpAxis: 'Z' }));
+
+    // The SAME part: authored 10 x 20 x 30 in a Z-up frame, but with the rotation already
+    // applied by the loader rather than by us.
+    const alreadyUpright = buildScene(stubPayload([10, 20, 30]));
+    alreadyUpright.rotation.x = -Math.PI / 2;
+    const loaderRotated = fin({
+      object: alreadyUpright,
+      units: UNITS_DECLARED(1),
+      sourceUpAxis: 'Z',
+      orientation: 'y-up',
+    });
+
+    for (let i = 0; i < 3; i++) {
+      expect(loaderRotated.stats.sourceSize[i]).toBeCloseTo(weRotated.stats.sourceSize[i]!, 6);
+      expect(loaderRotated.stats.size[i]).toBeCloseTo(weRotated.stats.size[i]!, 6);
+    }
+    expect([...weRotated.stats.sourceSize].map((v) => Math.round(v))).toEqual([10, 20, 30]);
+  });
+
   it('is unchanged when the same shape declares no units', () => {
     const declared = fin(stubRawAsset({ metersPerUnit: 0.001 }));
     const abstract = fin(stubRawAsset({ metersPerUnit: null }));
