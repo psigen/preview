@@ -791,6 +791,78 @@ try {
   await wait(400);
   check('Escape abandons a half-finished measurement', (await rows()).length === 0);
 
+  //     The first picked point is drawn as a sphere, and a sphere sized in WORLD units is
+  //     useless: it engulfs a millimetre-scale part and disappears on a large one. It has to
+  //     hold a constant PIXEL size like the committed markers do. Measured the way the user
+  //     sees it — count the marker's own orange in a screenshot — on two samples a MILLION
+  //     times apart in world scale.
+  const DRAFT_RGB = [240, 179, 74]; // #f0b34a, the draft marker's colour
+  const markerBox = async () => {
+    const img = await shot();
+    let minX = 1e9;
+    let minY = 1e9;
+    let maxX = -1;
+    let maxY = -1;
+    let n = 0;
+    for (let y = 0; y < img.height; y++) {
+      for (let x = 0; x < img.width; x++) {
+        const i = (y * img.width + x) * 4;
+        if (
+          Math.abs(img.data[i] - DRAFT_RGB[0]) < 30 &&
+          Math.abs(img.data[i + 1] - DRAFT_RGB[1]) < 30 &&
+          Math.abs(img.data[i + 2] - DRAFT_RGB[2]) < 34
+        ) {
+          n++;
+          if (x < minX) minX = x;
+          if (x > maxX) maxX = x;
+          if (y < minY) minY = y;
+          if (y > maxY) maxY = y;
+        }
+      }
+    }
+    return n === 0 ? { w: 0, h: 0, n: 0 } : { w: maxX - minX + 1, h: maxY - minY + 1, n };
+  };
+
+  const draftMarkerOn = async (sample) => {
+    await reload();
+    await click(`[data-sample="${sample}"]`);
+    await waitFor(`!!document.querySelector('[data-view="iso"]')`);
+    await click('[data-view="iso"]');
+    await click('[data-action="measure-toggle"]');
+    await clickCanvas(0, 0); // one point only, so the draft marker stays on screen
+    // Clear the hover ghost, which is the same colour and would confound the measurement.
+    await evalJs(
+      `document.querySelector('canvas').dispatchEvent(new PointerEvent('pointerleave', { bubbles: true, pointerId: 1 }))`,
+    );
+    await wait(400);
+    return markerBox();
+  };
+
+  const tinyMarker = await draftMarkerOn('usda'); // ~0.037 world units across
+  const hugeMarker = await draftMarkerOn('stl-big'); // ~37,000 world units across
+  const sane = (m) => m.n > 0 && m.w >= 9 && m.w <= 20 && m.h >= 9 && m.h <= 20;
+  check(
+    'the draft marker is pixel-sized on a millimetre-scale model',
+    sane(tinyMarker),
+    `${tinyMarker.w}x${tinyMarker.h}px`,
+  );
+  check(
+    'the draft marker is pixel-sized on a 1000x model',
+    sane(hugeMarker),
+    `${hugeMarker.w}x${hugeMarker.h}px`,
+  );
+  check(
+    'the draft marker is the same size across a millionfold scale change',
+    // Both must EXIST, or two absent markers would agree at 0x0. A world-sized sphere fails
+    // exactly that way: on the tiny model it encloses the camera and is culled, on the huge
+    // one it is sub-pixel. Zero orange pixels either way.
+    sane(tinyMarker) &&
+      sane(hugeMarker) &&
+      Math.abs(tinyMarker.w - hugeMarker.w) <= 3 &&
+      Math.abs(tinyMarker.h - hugeMarker.h) <= 3,
+    `${tinyMarker.w}x${tinyMarker.h} vs ${hugeMarker.w}x${hugeMarker.h}`,
+  );
+
   // #/about is a shareable URL, so it must work as a cold entry point too: the dialog over
   // the empty state, not a page that no longer exists. Done last, because the reload it
   // needs would strand anything that expected a model to still be open.

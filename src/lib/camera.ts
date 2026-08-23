@@ -65,6 +65,19 @@ export function distanceToFitSphere(
   return (Math.max(radius, 0) * padding) / Math.sin(fov / 2);
 }
 
+/**
+ * World-space size of one screen pixel at `distance` from a perspective camera.
+ *
+ * The basis for every "keep this a constant number of pixels" decision in the viewer —
+ * measurement markers and the point-cloud pick radius. Without it a marker sized in world
+ * units is a boulder on a 10 mm part and a speck on a 100 m site, which is the whole reason
+ * the viewer works across both.
+ */
+export function worldPerPixel(distance: number, viewportHeight: number, fovDeg: number): number {
+  const halfFov = (Math.max(fovDeg, 0) * Math.PI) / 360;
+  return (2 * Math.tan(halfFov) * Math.max(distance, 0)) / Math.max(viewportHeight, 1);
+}
+
 export interface DepthRange {
   readonly near: number;
   readonly far: number;

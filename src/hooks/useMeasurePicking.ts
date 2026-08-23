@@ -1,6 +1,7 @@
 import { useEffect, useRef } from 'react';
 import { useThree } from '@react-three/fiber';
 import { Raycaster, Vector2, Vector3, type Intersection, type Mesh, type Object3D } from 'three';
+import { worldPerPixel } from '../lib/camera';
 import { chooseSnap, type MeasurePoint, type Project, type SnapMode } from '../lib/measure';
 import { LIMITS } from '../lib/limits';
 import type { Vec3 } from '../lib/vec3';
@@ -59,7 +60,12 @@ export function useMeasurePicking({ root, enabled, snap, onPick, onHover }: Opti
       // A three-mesh-bvh flag: stop at the first hit instead of sorting every one.
       (raycaster as Raycaster & { firstHitOnly?: boolean }).firstHitOnly = true;
       // Points need a world-space threshold, scaled so it stays a constant screen size.
-      raycaster.params.Points.threshold = pointThreshold(p.camera, p.root, rect.height);
+      raycaster.params.Points.threshold = pointThreshold(
+        p.camera,
+        p.root,
+        rect.height,
+        (p.camera as { fov?: number }).fov ?? 45,
+      );
 
       const hits: Intersection[] = raycaster.intersectObject(p.root, true);
       const hit = hits[0];
@@ -163,11 +169,12 @@ function triangleOf(hit: Intersection): [Vec3, Vec3, Vec3] | null {
  * current view distance keeps that radius a roughly constant number of pixels.
  */
 function pointThreshold(
-  camera: { position: Vector3 },
+  camera: { position: Vector3; fov?: number },
   root: Object3D,
   viewportHeight: number,
+  fovDeg: number,
 ): number {
   root.getWorldPosition(scratch);
   const distance = camera.position.distanceTo(scratch) || 1;
-  return (distance * LIMITS.snapPx) / Math.max(viewportHeight, 1);
+  return worldPerPixel(distance, viewportHeight, fovDeg) * LIMITS.snapPx;
 }

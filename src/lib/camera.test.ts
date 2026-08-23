@@ -9,6 +9,7 @@ import {
   matchView,
   nearFarForDistance,
   orbitLimits,
+  worldPerPixel,
   type ViewId,
 } from './camera';
 
@@ -188,5 +189,48 @@ describe('matchView', () => {
     const off = normalize([0.1, 1, 0]); // ~5.7 degrees
     expect(matchView(off, 1)).toBeNull();
     expect(matchView(off, 10)).toBe('top');
+  });
+});
+
+describe('worldPerPixel', () => {
+  // A 45-degree camera 10 units back, filling a 1000px-tall viewport, sees
+  // 2*tan(22.5deg)*10 = 8.284 world units vertically, so one pixel is 1/1000 of that.
+  it('matches the perspective frustum height', () => {
+    const visibleHeight = 2 * Math.tan((45 * Math.PI) / 360) * 10;
+    expect(worldPerPixel(10, 1000, 45)).toBeCloseTo(visibleHeight / 1000, 12);
+  });
+
+  // The property the markers actually rely on: pixel size is what stays fixed, so the
+  // world size a marker needs is strictly proportional to how far away it is.
+  it('scales linearly with distance', () => {
+    const near = worldPerPixel(1, 800, 45);
+    expect(worldPerPixel(1000, 800, 45)).toBeCloseTo(near * 1000, 9);
+  });
+
+  // Two models 1000x apart in world size are the case that motivated this: viewed from a
+  // proportionally scaled distance, an identical pixel radius costs a proportional world
+  // radius. A fixed world radius would be invisible on one and engulf the other.
+  it('gives the same pixel size for models at wildly different scales', () => {
+    const PX = 7;
+    const tiny = worldPerPixel(0.05, 900, 45) * PX; // a 30 mm part, metres
+    const huge = worldPerPixel(50, 900, 45) * PX; // the same part 1000x bigger
+    expect(huge / tiny).toBeCloseTo(1000, 6);
+  });
+
+  it('narrows as the field of view narrows', () => {
+    expect(worldPerPixel(10, 800, 20)).toBeLessThan(worldPerPixel(10, 800, 45));
+  });
+
+  it('is zero at zero distance rather than negative behind the camera', () => {
+    expect(worldPerPixel(0, 800, 45)).toBe(0);
+    expect(worldPerPixel(-5, 800, 45)).toBe(0);
+  });
+
+  it('never divides by a zero viewport', () => {
+    expect(Number.isFinite(worldPerPixel(10, 0, 45))).toBe(true);
+  });
+
+  it('is zero at zero fov rather than NaN', () => {
+    expect(worldPerPixel(10, 800, 0)).toBe(0);
   });
 });

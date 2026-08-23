@@ -1,7 +1,8 @@
-import { useMemo, useRef } from 'react';
+import { useCallback, useMemo, useRef } from 'react';
 import { Html, Line } from '@react-three/drei';
 import { useFrame, useThree } from '@react-three/fiber';
-import { BufferGeometry, Float32BufferAttribute, Vector3, type Group, type Mesh } from 'three';
+import { BufferGeometry, Float32BufferAttribute, type Group, type Mesh } from 'three';
+import { worldPerPixel } from '../lib/camera';
 import {
   measurementLength,
   measurementMidpoint,
@@ -9,7 +10,6 @@ import {
   type MeasurePoint,
 } from '../lib/measure';
 import { formatLength, type UnitChoice, type UnitSystem } from '../lib/units';
-import type { Vec3 } from '../lib/vec3';
 
 interface Props {
   items: readonly Measurement[];
@@ -24,20 +24,60 @@ interface Props {
   onSelect(id: number): void;
 }
 
-/** A marker sized in pixels rather than world units, so 1 mm and 100 m parts look the same. */
+/** Marker radius in screen pixels. Never a world-space length — see `worldPerPixel`. */
 const MARKER_PX = 7;
-const scratch = new Vector3();
 
-function markerScale(
-  world: Vec3,
-  camera: { position: Vector3 },
-  viewportHeight: number,
-  fovDeg: number,
-): number {
-  const distance = camera.position.distanceTo(scratch.set(world[0], world[1], world[2])) || 1;
-  const worldPerPixel =
-    (2 * Math.tan(((fovDeg || 45) * Math.PI) / 360) * distance) / Math.max(viewportHeight, 1);
-  return worldPerPixel * MARKER_PX;
+/** Adds a mesh to the per-frame rescaling set and removes it on unmount. */
+type Register = (node: Mesh | null) => () => void;
+
+/**
+ * A sphere held at a constant pixel radius by the layer's single `useFrame`.
+ *
+ * Registration happens here rather than at each call site, so it cannot be forgotten: this
+ * is the only way the layer creates a marker, and every marker it creates is screen-sized.
+ * The draft marker used to be a bare `<mesh>` with a radius of one *world* unit, which made
+ * it swallow a millimetre-scale part and vanish on a large one.
+ */
+function Marker({
+  colour,
+  register,
+  position,
+  opacity,
+  meshRef,
+  visible,
+}: {
+  colour: string;
+  register: Register;
+  position?: [number, number, number];
+  opacity?: number;
+  meshRef?: React.RefObject<Mesh | null>;
+  /** Initial value only — `useFrame` owns visibility for the ghost from the next frame on. */
+  visible?: boolean;
+}) {
+  const attach = useCallback(
+    (node: Mesh | null) => {
+      if (meshRef) meshRef.current = node;
+      const unregister = register(node);
+      return () => {
+        unregister();
+        if (meshRef) meshRef.current = null;
+      };
+    },
+    [register, meshRef],
+  );
+
+  return (
+    <mesh ref={attach} position={position} visible={visible} renderOrder={11}>
+      <sphereGeometry args={[1, 16, 12]} />
+      <meshBasicMaterial
+        color={colour}
+        depthTest={false}
+        toneMapped={false}
+        transparent={opacity !== undefined}
+        opacity={opacity ?? 1}
+      />
+    </mesh>
+  );
 }
 
 /**
@@ -69,7 +109,14 @@ export function MeasurementLayer({
 
   const ghostMarker = useRef<Mesh>(null);
   const ghostLine = useRef<Group>(null);
-  const committedMarkers = useRef<Map<string, Mesh>>(new Map());
+  const markers = useRef<Set<Mesh>>(new Set());
+
+  const register = useCallback<Register>((node) => {
+    if (node) markers.current.add(node);
+    return () => {
+      if (node) markers.current.delete(node);
+    };
+  }, []);
 
   // A 2-point geometry mutated in place. drei's <Line> rebuilds its geometry in a useMemo
   // keyed on `points`, so it must never be re-rendered per frame.
@@ -80,23 +127,13 @@ export function MeasurementLayer({
   }, []);
 
   useFrame(() => {
-    // Keep every marker a constant pixel size, and follow the hover point, without a render.
-    for (const [key, mesh] of committedMarkers.current) {
-      if (!mesh) continue;
-      const p: Vec3 = [mesh.position.x, mesh.position.y, mesh.position.z];
-      const s = markerScale(p, camera, size.height, fov);
-      mesh.scale.setScalar(s);
-      void key;
-    }
-
+    // The ghost follows the pointer. Position first, so the rescale below sees where it
+    // actually is this frame rather than where it was last frame.
     const live = measuring ? hoverRef.current : null;
-    const marker = ghostMarker.current;
-    if (marker) {
-      marker.visible = live !== null;
-      if (live) {
-        marker.position.set(live.p[0], live.p[1], live.p[2]);
-        marker.scale.setScalar(markerScale(live.p, camera, size.height, fov));
-      }
+    const ghost = ghostMarker.current;
+    if (ghost) {
+      ghost.visible = live !== null;
+      if (live) ghost.position.set(live.p[0], live.p[1], live.p[2]);
     }
 
     const line = ghostLine.current;
@@ -110,6 +147,14 @@ export function MeasurementLayer({
         attr.needsUpdate = true;
         draftGeometry.computeBoundingSphere();
       }
+    }
+
+    // One place scales every marker — committed, draft and ghost alike. `mesh.position` is
+    // this group's local space, and the group carries no transform, so it is world space.
+    for (const mesh of markers.current) {
+      if (!mesh.visible) continue;
+      const distance = camera.position.distanceTo(mesh.position) || 1;
+      mesh.scale.setScalar(worldPerPixel(distance, size.height, fov) * MARKER_PX);
     }
   });
 
@@ -130,18 +175,12 @@ export function MeasurementLayer({
               renderOrder={10}
             />
             {[m.a, m.b].map((end, i) => (
-              <mesh
+              <Marker
                 key={i}
-                ref={(node) => {
-                  if (node) committedMarkers.current.set(`${m.id}:${i}`, node);
-                  else committedMarkers.current.delete(`${m.id}:${i}`);
-                }}
+                colour={colour}
+                register={register}
                 position={[...end.p] as [number, number, number]}
-                renderOrder={11}
-              >
-                <sphereGeometry args={[1, 16, 12]} />
-                <meshBasicMaterial color={colour} depthTest={false} toneMapped={false} />
-              </mesh>
+              />
             ))}
             <Html center position={[...mid] as [number, number, number]} zIndexRange={[8, 0]}>
               <button
@@ -159,26 +198,24 @@ export function MeasurementLayer({
 
       {/* Draft: a dashed line to the live cursor, and a marker on the committed first point. */}
       {draftPoint && (
-        <mesh position={[...draftPoint.p] as [number, number, number]} renderOrder={11}>
-          <sphereGeometry args={[1, 16, 12]} />
-          <meshBasicMaterial color="#f0b34a" depthTest={false} toneMapped={false} />
-        </mesh>
+        <Marker
+          colour="#f0b34a"
+          register={register}
+          position={[...draftPoint.p] as [number, number, number]}
+        />
       )}
       <group ref={ghostLine} visible={false}>
         <lineSegments geometry={draftGeometry} renderOrder={10}>
           <lineDashedMaterial color="#9aa1ad" dashSize={0.4} gapSize={0.2} depthTest={false} />
         </lineSegments>
       </group>
-      <mesh ref={ghostMarker} visible={false} renderOrder={11}>
-        <sphereGeometry args={[1, 12, 8]} />
-        <meshBasicMaterial
-          color="#f0b34a"
-          depthTest={false}
-          toneMapped={false}
-          transparent
-          opacity={0.8}
-        />
-      </mesh>
+      <Marker
+        colour="#f0b34a"
+        register={register}
+        opacity={0.8}
+        meshRef={ghostMarker}
+        visible={false}
+      />
     </group>
   );
 }
