@@ -94,6 +94,27 @@ must not touch the DOM, so it can run in a worker; `scene` returns an Object3D o
 thread and may use the DOM. Every format that needs textures, DOMParser or `window` has to
 be `scene`.
 
+## Three drag-and-drop traps
+
+Window-wide drop is where this pattern usually breaks, and every failure is silent.
+
+**`dragleave` is not reliable.** It is swallowed when the pointer exits past the window edge
+and when the element under it is removed mid-drag, so a naive boolean latches the overlay on
+forever. [src/lib/dragTracker.ts](src/lib/dragTracker.ts) uses a depth counter — enter and
+leave fire for every child crossed — plus a watchdog on `dragover`, which keeps firing for as
+long as a drag is live. Do not remove the watchdog; it is the only thing that recovers a
+swallowed leave.
+
+**`preventDefault` must be unconditional.** Without it on both `dragover` and `drop`, the
+browser NAVIGATES to the dropped file and the open model is gone with no way back. Those
+handlers are bound on `document` even while loading is disabled, so it can never depend on
+our own state being correct.
+
+**Two API shapes truncate silently.** `webkitGetAsEntry()` must be called synchronously
+before any await, or the items list is already empty; and `readEntries()` returns at most 100
+entries per call, so it must be drained in a loop or every folder over 100 files loses the
+rest without an error.
+
 ## Two camera-controls traps
 
 Both were found by `npm run verify:viewer` after all unit tests passed, and both are the

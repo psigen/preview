@@ -101,13 +101,45 @@ await send('Page.navigate', { url: `http://localhost:${PORT}/index.html` });
 const evalJs = async (expression, awaitPromise = false) =>
   (await send('Runtime.evaluate', { expression, returnByValue: true, awaitPromise }))?.result?.value;
 const wait = (ms) => new Promise((r) => setTimeout(r, ms));
-const setReducedMotion = (value) =>
-  send('Emulation.setEmulatedMedia', { features: [{ name: 'prefers-reduced-motion', value }] });
+const setReducedMotion = async (value) => {
+  await send('Emulation.setEmulatedMedia', { features: [{ name: 'prefers-reduced-motion', value }] });
+  const want = value === 'reduce';
+  for (let i = 0; i < 40; i++) {
+    const seen = await evalJs(`matchMedia('(prefers-reduced-motion: reduce)').matches`);
+    if (seen === want) break;
+    await wait(50);
+  }
+  // and let the resulting React commit flush before anything is measured
+  await wait(150);
+};
 
-for (let i = 0; i < 80; i++) {
-  if (await evalJs(`!!document.querySelector('[data-view="iso"]')`)) break;
-  await wait(250);
-}
+const waitFor = async (expression, tries = 80) => {
+  for (let i = 0; i < tries; i++) {
+    if (await evalJs(expression)) return true;
+    await wait(250);
+  }
+  return false;
+};
+
+const reload = async () => {
+  await send('Page.navigate', { url: `http://localhost:${PORT}/index.html` });
+  return waitFor(`!!document.querySelector('[data-sample]')`);
+};
+
+/** Build a File in the page and dispatch a real DragEvent sequence at the document. */
+const dispatchDrag = (types, phases, name = 'x.stl', content = '') => evalJs(`
+(() => {
+  const dt = new DataTransfer();
+  ${types.includes('Files') ? `dt.items.add(new File([${JSON.stringify(content)}], ${JSON.stringify(name)}));` : `dt.setData('text/plain', 'hello');`}
+  for (const phase of ${JSON.stringify(phases)}) {
+    document.dispatchEvent(new DragEvent(phase, { dataTransfer: dt, bubbles: true, cancelable: true }));
+  }
+  return true;
+})()`);
+
+const overlayVisible = () => evalJs(`!!document.querySelector('.drop-overlay')`);
+
+await reload();
 
 const click = async (selector) => {
   const ok = await evalJs(`(()=>{const e=document.querySelector('${selector}');if(!e)return false;e.click();return true;})()`);
@@ -168,7 +200,9 @@ try {
   //    and nothing rescales the model, so world scale must not change a single pixel.
   const frames = {};
   for (const sample of ['stl-mm', 'stl-m', 'stl-big']) {
+    await reload();
     await click(`[data-sample="${sample}"]`);
+    await waitFor(`!!document.querySelector('[data-view="iso"]')`);
     await click('[data-view="iso"]');
     frames[sample] = await shot();
   }
@@ -180,13 +214,17 @@ try {
 
   // A different format of the same shape must load and render, but is NOT pixel-comparable:
   // PLY carries no normals, so buildScene derives smoothed ones where STL has flat facets.
+  await reload();
   await click('[data-sample="ply"]');
+  await waitFor(`!!document.querySelector('[data-view="iso"]')`);
   await click('[data-view="iso"]');
   const plyFrame = await shot();
   check('a PLY sample loads and renders', inkPct(plyFrame) > 2, `${inkPct(plyFrame).toFixed(1)}% ink`);
 
   // 2. Every view button.
+  await reload();
   await click('[data-sample="stl-mm"]');
+  await waitFor(`!!document.querySelector('[data-view="iso"]')`);
   const views = ['front', 'back', 'right', 'left', 'top', 'bottom', 'iso'];
   const viewFrames = {};
   for (const v of views) {
@@ -223,6 +261,118 @@ try {
   await setReducedMotion('reduce');
   const reduced = await timeArrival('front', 'bottom', 400);
   check('prefers-reduced-motion snaps instantly', reduced !== null && reduced < 120, `${Math.round(reduced)} ms`);
+  // 6. Drag and drop.
+  await reload();
+  check('the empty state is shown before anything is loaded',
+    await evalJs(`!!document.querySelector('.empty-state')`));
+
+  await dispatchDrag(['Files'], ['dragenter', 'dragover']);
+  await wait(120);
+  check('the drop overlay appears for a file drag', await overlayVisible());
+
+  // THE watchdog case: a drag that exits past the window edge fires no dragleave, so the
+  // overlay must time out on its own or it latches on forever.
+  await wait(700);
+  check('a drag that leaves without a dragleave times out', !(await overlayVisible()));
+
+  await dispatchDrag(['text/plain'], ['dragenter', 'dragover']);
+  await wait(120);
+  check('dragging text shows no overlay', !(await overlayVisible()));
+  await dispatchDrag(['Files'], ['dragend']);
+
+  // A real drop of a real STL.
+  const stlAscii = [
+    'solid box',
+    ...Array.from({ length: 1 }, () =>
+      'facet normal 0 0 1\n outer loop\n  vertex 0 0 0\n  vertex 1 0 0\n  vertex 0 1 0\n endloop\nendfacet'),
+    'endsolid box',
+  ].join('\n');
+  await dispatchDrag(['Files'], ['dragenter', 'dragover', 'drop'], 'dropped.stl', stlAscii);
+  const loaded = await waitFor(`document.querySelector('[data-stat="triangles"]')?.textContent === '1'`, 40);
+  check('dropping an STL loads it', loaded);
+  check('the overlay is gone after a drop', !(await overlayVisible()));
+  check('the empty state is replaced by the viewer',
+    !(await evalJs(`!!document.querySelector('.empty-state')`)));
+
+  // An unrecognised file must explain itself rather than fail silently.
+  await dispatchDrag(['Files'], ['dragenter', 'dragover', 'drop'], 'notes.txt', 'just prose, not a model');
+  const errored = await waitFor(`!!document.querySelector('[role="alert"]')`, 30);
+  check('dropping an unsupported file reports an error', errored);
+  const errText = await evalJs(`document.querySelector('[role="alert"]')?.textContent ?? ''`);
+  check('the error names the supported formats', /\.stl/.test(errText));
+
+  // 7. Repeated loads must not leak. Disposal is asserted per-format in the unit suite;
+  //    what that cannot show is whether the app actually CALLS dispose when a model is
+  //    replaced. A big mesh makes a leak measurable: each one holds ~1.7 MB of Float32
+  //    attributes, so five leaked models would be plainly visible above heap noise.
+  const bigStl = `(() => {
+    const n = 8000;
+    const out = ['solid big'];
+    for (let i = 0; i < n; i++) {
+      const x = (i % 100) * 0.1, y = ((i / 100) | 0) * 0.1;
+      out.push('facet normal 0 0 1', ' outer loop',
+        \` vertex \${x} \${y} 0\`, \` vertex \${x + 0.1} \${y} 0\`, \` vertex \${x} \${y + 0.1} 0\`,
+        ' endloop', 'endfacet');
+    }
+    out.push('endsolid big');
+    return out.join('\\n');
+  })()`;
+
+  await reload();
+  await click('[data-sample="stl-mm"]');
+  await waitFor(`!!document.querySelector('[data-view="iso"]')`);
+
+  const heap = async () => {
+    await send('HeapProfiler.collectGarbage');
+    await wait(250);
+    return evalJs(`performance.memory ? performance.memory.usedJSHeapSize : 0`);
+  };
+
+  const dropBig = async (i) => {
+    await evalJs(`(() => {
+      const dt = new DataTransfer();
+      dt.items.add(new File([${bigStl}], 'big${i}.stl'));
+      for (const p of ['dragenter','dragover','drop'])
+        document.dispatchEvent(new DragEvent(p, { dataTransfer: dt, bubbles: true, cancelable: true }));
+      return true;
+    })()`);
+    const ok = await waitFor(
+      `(document.querySelector('.filename')?.textContent ?? '').includes('big${i}.stl')`, 80);
+    if (!ok) throw new Error(`big load ${i} did not complete`);
+  };
+
+  await dropBig(0);
+  const heapAfterFirst = await heap();
+  for (let i = 1; i <= 5; i++) await dropBig(i);
+  const heapAfterSix = await heap();
+
+  const growthMb = (heapAfterSix - heapAfterFirst) / (1024 * 1024);
+  const perModelMb = 8000 * 3 * 3 * 4 * 2 / (1024 * 1024); // positions + normals, Float32
+  check(
+    'replacing a model five times does not accumulate geometry',
+    heapAfterFirst === 0 || growthMb < perModelMb * 2,
+    heapAfterFirst === 0
+      ? 'performance.memory unavailable — skipped'
+      : `grew ${growthMb.toFixed(1)} MB; five leaked models would be ~${(perModelMb * 5).toFixed(1)} MB`,
+  );
+
+  await reload();
+  await click('[data-sample="stl-mm"]');
+  await waitFor(`!!document.querySelector('[data-view="iso"]')`);
+  for (let i = 0; i < 5; i++) {
+    // Each drop REPLACES the open model in place — no round trip through the empty state,
+    // which is what the previous model's disposal depends on. Waiting on the filename
+    // rather than the triangle count, because the count is identical every round and a
+    // stale match would let a failed load pass.
+    await dispatchDrag(['Files'], ['dragenter', 'dragover', 'drop'], `round${i}.stl`, stlAscii);
+    const ok = await waitFor(
+      `(document.querySelector('.filename')?.textContent ?? '').includes('round${i}.stl')`, 40);
+    if (!ok) throw new Error(`load ${i + 1} of 5 did not complete`);
+  }
+  await click('[data-view="iso"]');
+  const afterFive = await shot();
+  check('five sequential loads all succeed and still render', inkPct(afterFive) > 1,
+    `${inkPct(afterFive).toFixed(1)}% ink`);
 } catch (err) {
   check(`harness error: ${err.message}`, false);
 }

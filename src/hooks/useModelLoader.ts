@@ -1,0 +1,138 @@
+import { useCallback, useEffect, useRef, useState } from 'react';
+import type { LoadedModel } from '../lib/asset/types';
+import { selectPrimary, type DroppedFile } from '../lib/dnd';
+import { assessFileSize } from '../lib/limits';
+import { loadAsset } from '../lib/load/loadAsset';
+import type { LoadInput } from '../lib/registry/types';
+import { acceptAttribute } from '../lib/detect/detect';
+
+export interface PendingLarge {
+  readonly message: string;
+  confirm(): void;
+  cancel(): void;
+}
+
+export interface ModelLoaderState {
+  readonly model: LoadedModel | null;
+  /** Non-null while loading; the string is the status to show. */
+  readonly busy: string | null;
+  readonly error: string | null;
+  /** Set when a file is large enough that opening it might kill the tab. */
+  readonly pendingLarge: PendingLarge | null;
+  /** Files kept from the drop for sidecar resolution. */
+  readonly companionCount: number;
+  open(files: readonly DroppedFile[], truncated?: boolean): void;
+  dismissError(): void;
+}
+
+/**
+ * Owns the loaded model and its lifecycle.
+ *
+ * Disposal is imperative and driven by a ref, never done inside a setState updater:
+ * revoking an object URL is idempotent but geometry.dispose() is not, and React may invoke
+ * an updater twice under StrictMode. Without this, repeated loads leak GPU memory until the
+ * tab dies — and "it gets slower the more models I open" is a bug that takes days to find.
+ */
+export function useModelLoader(): ModelLoaderState {
+  const [model, setModel] = useState<LoadedModel | null>(null);
+  const [busy, setBusy] = useState<string | null>(null);
+  const [error, setError] = useState<string | null>(null);
+  const [pendingLarge, setPendingLarge] = useState<PendingLarge | null>(null);
+  const [companionCount, setCompanionCount] = useState(0);
+
+  const currentRef = useRef<LoadedModel | null>(null);
+  // Only the newest request may commit; an earlier slow load must not overwrite it.
+  const requestRef = useRef(0);
+
+  useEffect(
+    () => () => {
+      currentRef.current?.dispose();
+      currentRef.current = null;
+    },
+    [],
+  );
+
+  const run = useCallback(async (primary: DroppedFile, companions: number) => {
+    const token = ++requestRef.current;
+    setBusy(`Reading ${primary.file.name}…`);
+    setError(null);
+    setPendingLarge(null);
+    setCompanionCount(companions);
+
+    try {
+      const bytes = await primary.file.arrayBuffer();
+      if (requestRef.current !== token) return;
+
+      const input: LoadInput = {
+        primary: { name: primary.path, path: primary.path, bytes },
+        // Sidecar resolution lands with the first format that needs it; no format supported
+        // today reads companions, and eagerly slurping a dropped folder's textures would
+        // cost hundreds of megabytes for nothing.
+        companions: new Map(),
+      };
+
+      const next = await loadAsset(input, {
+        onProgress: (phase) => {
+          if (requestRef.current === token) setBusy(`${phase}…`);
+        },
+      });
+
+      if (requestRef.current !== token) {
+        next.dispose();
+        return;
+      }
+
+      const previous = currentRef.current;
+      currentRef.current = next;
+      setModel(next);
+      if (previous) previous.dispose();
+    } catch (err) {
+      if (requestRef.current !== token) return;
+      const message = err instanceof Error ? err.message : String(err);
+      setError(`${message} Supported files: ${acceptAttribute().replaceAll(',', ' ')}`);
+    } finally {
+      if (requestRef.current === token) setBusy(null);
+    }
+  }, []);
+
+  const open = useCallback(
+    (files: readonly DroppedFile[], truncated = false) => {
+      const { primary, companions } = selectPrimary(files);
+
+      if (!primary) {
+        const names = files.slice(0, 3).map((f) => f.path).join(', ');
+        setError(
+          files.length === 0
+            ? 'That drop contained no files.'
+            : `Nothing in that drop can be opened${names ? ` (${names})` : ''}. ` +
+              `Supported files: ${acceptAttribute().replaceAll(',', ' ')}`,
+        );
+        return;
+      }
+
+      if (truncated) {
+        setError('That folder was too large to read completely; only part of it was scanned.');
+      }
+
+      // Check the size BEFORE reading a byte. Once a parse of a 500 MB mesh is under way
+      // there is no recovery path — the tab simply dies — so this is the one place a
+      // warning can still help.
+      const { tooBig, message } = assessFileSize(primary.file.size);
+      if (tooBig && message) {
+        setPendingLarge({
+          message,
+          confirm: () => void run(primary, companions.size),
+          cancel: () => setPendingLarge(null),
+        });
+        return;
+      }
+
+      void run(primary, companions.size);
+    },
+    [run],
+  );
+
+  const dismissError = useCallback(() => setError(null), []);
+
+  return { model, busy, error, pendingLarge, companionCount, open, dismissError };
+}

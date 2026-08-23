@@ -28,10 +28,12 @@ and the format-detection library; the viewer, loader plugins and ruler are still
 | Asset contract: payload, orientation, stats, bounds, disposal | done |
 | Viewer: camera, standard views, lighting | done |
 | Format registry, STL and PLY loading, bundled samples | done |
-| Remaining formats, drag-and-drop, measurement ruler | not yet |
+| Drag-and-drop, folder drop, in-place replacement | done |
+| Remaining formats, measurement ruler | not yet |
 
-323 unit tests pass headless, plus a 17-check end-to-end verification
-(`npm run verify:viewer`) that drives the real UI in headless Chrome.
+371 unit tests pass headless, plus a 28-check end-to-end verification
+(`npm run verify:viewer`) that drives the real UI in headless Chrome, including
+a calibrated geometry-leak check.
 
 The feature list above describes the target. Nothing in it is wired up yet.
 
@@ -171,6 +173,9 @@ src/
   lib/registry/        # the format registry and the plugin contract
   lib/formats/         # one directory per format: a tiny descriptor + a lazy pipeline
   lib/samples/         # the canonical box, and the bundled sample models built from it
+  lib/dnd.ts           # primary-file election and path normalisation for a drop
+  lib/dragTracker.ts   # the enter/leave counter and stale-drag watchdog, as pure logic
+  lib/dropEntries.ts   # directory-aware drop reading (drains readEntries properly)
   lib/format-id.ts     # the shared format vocabulary
   components/          # Viewer, CameraRig, SceneEnvironment, ModelRoot, ViewToolbar
   hooks/               # useRoomEnvironment, usePrefersReducedMotion

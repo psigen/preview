@@ -325,3 +325,139 @@ progress {
   font-size: 12px;
   text-transform: uppercase;
 }
+
+/* ---- empty state, drop overlay, status bar ------------------------------- */
+
+.empty-state-wrap {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  padding: 20px;
+}
+
+.empty-state {
+  max-width: 460px;
+  margin: 0;
+  text-align: center;
+}
+
+.empty-state h1 {
+  margin: 0 0 6px;
+  font-size: 20px;
+}
+
+.empty-actions {
+  display: flex;
+  gap: 8px;
+  justify-content: center;
+  margin-top: 14px;
+}
+
+.empty-samples {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  align-items: center;
+}
+
+/* Pseudo-element rules, so the divider needs no extra markup. */
+.divider {
+  position: relative;
+  margin: 18px 0 10px;
+  color: var(--muted);
+  font-size: 13px;
+}
+
+.divider::before,
+.divider::after {
+  content: '';
+  position: absolute;
+  top: 50%;
+  width: 32%;
+  height: 1px;
+  background: var(--border);
+}
+
+.divider::before {
+  left: 0;
+}
+
+.divider::after {
+  right: 0;
+}
+
+/*
+ * pointer-events: none is load-bearing. The drop is handled by a document listener; if this
+ * overlay could receive the event, a drop would be handled twice.
+ */
+.drop-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 10;
+  pointer-events: none;
+  display: grid;
+  place-items: center;
+  background: rgba(15, 17, 21, 0.72);
+  -webkit-backdrop-filter: blur(3px);
+  backdrop-filter: blur(3px);
+}
+
+.drop-frame {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  align-items: center;
+  padding: 44px 64px;
+  border: 2px dashed var(--accent);
+  border-radius: var(--radius);
+}
+
+.status-bar {
+  padding: 8px 12px;
+  max-width: 640px;
+}
+
+.status-line {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 0;
+  font-size: 13px;
+}
+
+.status-confirm {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.status-confirm .empty-actions {
+  margin-top: 6px;
+}
+
+.spinner {
+  width: 12px;
+  height: 12px;
+  border: 2px solid var(--border);
+  border-top-color: var(--accent);
+  border-radius: 50%;
+  animation: spin 0.8s linear infinite;
+  flex: none;
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.filename {
+  margin: 2px 0 4px;
+  font-size: 13px;
+  color: var(--muted);
+  max-width: 220px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
