@@ -45,9 +45,11 @@ export function entriesFromDataTransfer(dataTransfer: DataTransfer): FileSystemE
   const out: FileSystemEntryLike[] = [];
   for (const item of Array.from(dataTransfer.items)) {
     if (item.kind !== 'file') continue;
-    const entry = (item as unknown as {
-      webkitGetAsEntry?: () => FileSystemEntryLike | null;
-    }).webkitGetAsEntry?.();
+    const entry = (
+      item as unknown as {
+        webkitGetAsEntry?: () => FileSystemEntryLike | null;
+      }
+    ).webkitGetAsEntry?.();
     if (entry) out.push(entry);
   }
   return out;
@@ -134,7 +136,9 @@ export async function readEntries(
 /** Fallback for browsers or drags that expose only a flat FileList. */
 export function filesFromList(list: ArrayLike<File>): DroppedFile[] {
   const raw = Array.from(list).map((file) => ({
-    path: normalizePath((file as File & { webkitRelativePath?: string }).webkitRelativePath || file.name),
+    path: normalizePath(
+      (file as File & { webkitRelativePath?: string }).webkitRelativePath || file.name,
+    ),
     file,
   }));
   const strip = stripCommonRoot(raw.map((r) => r.path));

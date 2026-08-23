@@ -33,11 +33,21 @@ export const plyPipeline: GeometryPipeline = {
 
     if (isPointCloud) {
       warnings.push(
-        warn('no-indices', 'This PLY contains points with no faces, so it is drawn as a point cloud.', 'info'),
+        warn(
+          'no-indices',
+          'This PLY contains points with no faces, so it is drawn as a point cloud.',
+          'info',
+        ),
       );
     } else if (!mesh.normals) {
       // Common: most PLY writers omit normals. buildScene derives them.
-      warnings.push(warn('no-normals', 'No vertex normals in this PLY; they were derived from the faces.', 'info'));
+      warnings.push(
+        warn(
+          'no-normals',
+          'No vertex normals in this PLY; they were derived from the faces.',
+          'info',
+        ),
+      );
     }
 
     const meshes = [mesh];

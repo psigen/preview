@@ -43,7 +43,11 @@ declare module 'occt-import-js' {
   }
 
   export interface OcctModule {
-    ReadFile(format: 'step' | 'iges' | 'brep', content: Uint8Array, params: OcctReadParams | null): OcctResult;
+    ReadFile(
+      format: 'step' | 'iges' | 'brep',
+      content: Uint8Array,
+      params: OcctReadParams | null,
+    ): OcctResult;
     ReadStepFile(content: Uint8Array, params: OcctReadParams | null): OcctResult;
     ReadIgesFile(content: Uint8Array, params: OcctReadParams | null): OcctResult;
     ReadBrepFile(content: Uint8Array, params: OcctReadParams | null): OcctResult;

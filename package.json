@@ -5,18 +5,20 @@
   "type": "module",
   "description": "Client-side 3D mesh and CAD preview: drop a mesh or CAD file into the browser, orbit it, and measure it. Nothing is uploaded to any server.",
   "scripts": {
-    "postinstall": "node scripts/copy-wasm.mjs",
-    "stage-wasm": "node scripts/copy-wasm.mjs",
-    "prebuild": "node scripts/copy-wasm.mjs --check",
+    "postinstall": "node scripts/copy-wasm.js",
+    "stage-wasm": "node scripts/copy-wasm.js",
+    "prebuild": "node scripts/copy-wasm.js --check",
     "dev": "vite",
     "build": "tsc && vite build",
     "preview": "vite preview",
+    "format": "prettier --write .",
+    "format:check": "prettier --check .",
     "test": "vitest run --project lib --project dom",
     "test:watch": "vitest --project lib --project dom",
     "test:browser": "vitest run --project browser",
-    "lint": "eslint . && node scripts/check-no-network.mjs",
+    "lint": "eslint . && prettier --check . && node scripts/check-no-network.js",
     "typecheck": "tsc --noEmit",
-    "verify:viewer": "node scripts/verify-viewer.mjs"
+    "verify:viewer": "node scripts/verify-viewer.js"
   },
   "dependencies": {
     "@react-three/drei": "10.7.8",
@@ -40,6 +42,7 @@
     "globals": "^17.11.0",
     "jsdom": "^30.0.0",
     "pngjs": "^7.0.0",
+    "prettier": "^3.9.6",
     "typescript": "~5.9.0",
     "typescript-eslint": "^8.67.0",
     "vite": "8.2.2",

@@ -2,7 +2,12 @@ import { useMemo, useRef } from 'react';
 import { Html, Line } from '@react-three/drei';
 import { useFrame, useThree } from '@react-three/fiber';
 import { BufferGeometry, Float32BufferAttribute, Vector3, type Group, type Mesh } from 'three';
-import { measurementLength, measurementMidpoint, type Measurement, type MeasurePoint } from '../lib/measure';
+import {
+  measurementLength,
+  measurementMidpoint,
+  type Measurement,
+  type MeasurePoint,
+} from '../lib/measure';
 import { formatLength, type UnitChoice, type UnitSystem } from '../lib/units';
 import type { Vec3 } from '../lib/vec3';
 
@@ -23,9 +28,15 @@ interface Props {
 const MARKER_PX = 7;
 const scratch = new Vector3();
 
-function markerScale(world: Vec3, camera: { position: Vector3 }, viewportHeight: number, fovDeg: number): number {
+function markerScale(
+  world: Vec3,
+  camera: { position: Vector3 },
+  viewportHeight: number,
+  fovDeg: number,
+): number {
   const distance = camera.position.distanceTo(scratch.set(world[0], world[1], world[2])) || 1;
-  const worldPerPixel = (2 * Math.tan(((fovDeg || 45) * Math.PI) / 360) * distance) / Math.max(viewportHeight, 1);
+  const worldPerPixel =
+    (2 * Math.tan(((fovDeg || 45) * Math.PI) / 360) * distance) / Math.max(viewportHeight, 1);
   return worldPerPixel * MARKER_PX;
 }
 
@@ -42,7 +53,15 @@ function markerScale(world: Vec3, camera: { position: Vector3 }, viewportHeight:
  * measurement is created, deleted, cleared or selected.
  */
 export function MeasurementLayer({
-  items, draftPoint, hoverRef, measuring, selectedId, metersPerUnit, unit, system, onSelect,
+  items,
+  draftPoint,
+  hoverRef,
+  measuring,
+  selectedId,
+  metersPerUnit,
+  unit,
+  system,
+  onSelect,
 }: Props) {
   const camera = useThree((s) => s.camera);
   const size = useThree((s) => s.size);
@@ -152,7 +171,13 @@ export function MeasurementLayer({
       </group>
       <mesh ref={ghostMarker} visible={false} renderOrder={11}>
         <sphereGeometry args={[1, 12, 8]} />
-        <meshBasicMaterial color="#f0b34a" depthTest={false} toneMapped={false} transparent opacity={0.8} />
+        <meshBasicMaterial
+          color="#f0b34a"
+          depthTest={false}
+          toneMapped={false}
+          transparent
+          opacity={0.8}
+        />
       </mesh>
     </group>
   );

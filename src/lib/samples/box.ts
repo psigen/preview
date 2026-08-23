@@ -37,7 +37,12 @@ export function extentsIn(unit: UnitName): Extents {
   return { x: BOX_MM.x * s, y: BOX_MM.y * s, z: BOX_MM.z * s };
 }
 
-/** The 8 corners. Index bit0 = X, bit1 = Y, bit2 = Z. */
+/**
+ * The 8 corners. Index bit0 = X, bit1 = Y, bit2 = Z.
+ *
+ * Formatting is pinned: one row per Z level, matching the bit layout above.
+ */
+// prettier-ignore
 export function corners({ x, y, z }: Extents): Vec3[] {
   return [
     [0, 0, 0], [x, 0, 0], [x, y, 0], [0, y, 0],
@@ -45,7 +50,14 @@ export function corners({ x, y, z }: Extents): Vec3[] {
   ];
 }
 
-/** 12 triangles as corner-index triples, counter-clockwise seen from outside. */
+/**
+ * 12 triangles as corner-index triples, counter-clockwise seen from outside.
+ *
+ * Formatting is pinned: two triangles per line IS the grouping. Each row is one face of the
+ * box and the trailing comment names it, so reflowed one-per-line the comment would appear
+ * to label only the second triangle.
+ */
+// prettier-ignore
 export const TRIS: readonly Vec3[] = Object.freeze([
   [0, 3, 2], [0, 2, 1], // -Z
   [4, 5, 6], [4, 6, 7], // +Z
@@ -55,7 +67,12 @@ export const TRIS: readonly Vec3[] = Object.freeze([
   [1, 2, 6], [1, 6, 5], // +X
 ]);
 
-/** Outward face normal per triangle, matching TRIS order. */
+/**
+ * Outward face normal per triangle, matching TRIS order.
+ *
+ * Formatting is pinned, paired the same way, so the two tables read side by side.
+ */
+// prettier-ignore
 export const FACE_NORMALS: readonly Vec3[] = Object.freeze([
   [0, 0, -1], [0, 0, -1], [0, 0, 1], [0, 0, 1],
   [0, -1, 0], [0, -1, 0], [0, 1, 0], [0, 1, 0],

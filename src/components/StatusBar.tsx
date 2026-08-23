@@ -46,7 +46,12 @@ export function StatusBar({ busy, error, pendingLarge, onDismissError }: Props) 
       {error && (
         <p className="error status-line" role="alert">
           {error}
-          <button type="button" className="link" onClick={onDismissError} aria-label="Dismiss error">
+          <button
+            type="button"
+            className="link"
+            onClick={onDismissError}
+            aria-label="Dismiss error"
+          >
             ✕
           </button>
         </p>

@@ -172,7 +172,9 @@ describe('selectPrimary', () => {
 
   it('prefers a scene format over a bare mesh', () => {
     // A converted export usually ships both; the glTF is the richer one.
-    expect(selectPrimary([dropped('part.stl'), dropped('part.gltf')]).primary?.path).toBe('part.gltf');
+    expect(selectPrimary([dropped('part.stl'), dropped('part.gltf')]).primary?.path).toBe(
+      'part.gltf',
+    );
   });
 
   it('prefers the shallowest candidate when ranks tie', () => {

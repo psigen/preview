@@ -53,7 +53,8 @@ export function CameraRig({ bounds, apiRef, onActiveViewChange, reduceMotion = f
    * each press of Fit.
    */
   const fitSphere = useMemo(
-    () => new Sphere(new Vector3(center[0], center[1], center[2]), safeRadius(bounds) * FIT_PADDING),
+    () =>
+      new Sphere(new Vector3(center[0], center[1], center[2]), safeRadius(bounds) * FIT_PADDING),
     [bounds, center],
   );
 
@@ -108,7 +109,10 @@ export function CameraRig({ bounds, apiRef, onActiveViewChange, reduceMotion = f
       const controls = controlsRef.current;
       if (!controls) return;
       if (animate) resetFrameClock();
-      const target = new Sphere(new Vector3(center[0], center[1], center[2]), Math.max(radius, 1e-6));
+      const target = new Sphere(
+        new Vector3(center[0], center[1], center[2]),
+        Math.max(radius, 1e-6),
+      );
       void controls.fitToSphere(target, animate);
       invalidate();
     },

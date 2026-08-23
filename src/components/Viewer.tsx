@@ -26,7 +26,15 @@ interface Props {
 }
 
 export function Viewer({
-  model, bounds, apiRef, onActiveViewChange, reduceMotion, measure, dispatchMeasure, unit, system,
+  model,
+  bounds,
+  apiRef,
+  onActiveViewChange,
+  reduceMotion,
+  measure,
+  dispatchMeasure,
+  unit,
+  system,
 }: Props) {
   return (
     <Canvas

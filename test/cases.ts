@@ -69,7 +69,10 @@ const CAD_BOUNDS_FROM_Z_UP = {
 };
 
 /** Every unitless triangle mesh of the canonical box shares these expectations. */
-const unitlessMesh = (over: Partial<FormatCase> & Pick<FormatCase, 'name' | 'format' | 'fileName' | 'bytes' | 'strongSniff'>): FormatCase => ({
+const unitlessMesh = (
+  over: Partial<FormatCase> &
+    Pick<FormatCase, 'name' | 'format' | 'fileName' | 'bytes' | 'strongSniff'>,
+): FormatCase => ({
   expectTriangles: 12,
   expectPoints: 0,
   expectMeshes: 1,

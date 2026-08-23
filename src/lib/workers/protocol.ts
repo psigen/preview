@@ -44,9 +44,19 @@ export interface TranscodeResult {
 }
 
 export type WorkerResponse =
-  | { readonly type: 'progress'; readonly id: number; readonly phase: string; readonly ratio: number | null }
+  | {
+      readonly type: 'progress';
+      readonly id: number;
+      readonly phase: string;
+      readonly ratio: number | null;
+    }
   | { readonly type: 'result'; readonly id: number; readonly out: TranscodeResult }
   /** Errors cross as plain fields: an Error does not structured-clone its stack reliably. */
-  | { readonly type: 'error'; readonly id: number; readonly name: string; readonly message: string };
+  | {
+      readonly type: 'error';
+      readonly id: number;
+      readonly name: string;
+      readonly message: string;
+    };
 
 export type PostMessage = (response: WorkerResponse, transfer?: ArrayBuffer[]) => void;

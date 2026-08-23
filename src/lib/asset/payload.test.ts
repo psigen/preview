@@ -49,7 +49,9 @@ describe('buildScene', () => {
   });
 
   it('rejects a positions array that is not a multiple of 3', () => {
-    expect(() => buildScene(onePayload({ positions: new Float32Array(4) }))).toThrow(/multiple of 3/);
+    expect(() => buildScene(onePayload({ positions: new Float32Array(4) }))).toThrow(
+      /multiple of 3/,
+    );
   });
 
   it('builds Points and LineSegments for the other topologies', () => {
@@ -147,7 +149,10 @@ describe('buildScene', () => {
 
 describe('collectTransferables', () => {
   it('lists every distinct backing buffer', () => {
-    const payload = onePayload({ normals: new Float32Array(9), indices: new Uint32Array([0, 1, 2]) });
+    const payload = onePayload({
+      normals: new Float32Array(9),
+      indices: new Uint32Array([0, 1, 2]),
+    });
     expect(collectTransferables(payload)).toHaveLength(3);
   });
 
@@ -174,13 +179,16 @@ describe('collectTransferables', () => {
 
 describe('worker round-trip', () => {
   it('survives structuredClone, which is what postMessage does', () => {
-    const payload = onePayload({ normals: new Float32Array(9), indices: new Uint32Array([0, 1, 2]) });
+    const payload = onePayload({
+      normals: new Float32Array(9),
+      indices: new Uint32Array([0, 1, 2]),
+    });
     const cloned = structuredClone(payload) as ScenePayload;
     const before = buildScene(payload).children[0] as Mesh;
     const after = buildScene(cloned).children[0] as Mesh;
-    expect(Array.from((after.geometry.attributes.position as { array: Float32Array }).array)).toEqual(
-      Array.from((before.geometry.attributes.position as { array: Float32Array }).array),
-    );
+    expect(
+      Array.from((after.geometry.attributes.position as { array: Float32Array }).array),
+    ).toEqual(Array.from((before.geometry.attributes.position as { array: Float32Array }).array));
     expect(after.geometry.index?.count).toBe(before.geometry.index?.count);
   });
 });

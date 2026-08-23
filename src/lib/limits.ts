@@ -78,7 +78,9 @@ export function assessModel(triangles: number, bytes: number): Assessment {
     );
   } else if (triangles >= LIMITS.softTriangles) {
     level = 'warn';
-    messages.push(`Large model (${triangles.toLocaleString('en-US')} triangles) — interaction may be slow.`);
+    messages.push(
+      `Large model (${triangles.toLocaleString('en-US')} triangles) — interaction may be slow.`,
+    );
   }
 
   if (triangles > LIMITS.bvhMaxTriangles) {

@@ -1,5 +1,12 @@
 import { describe, expect, it } from 'vitest';
-import { BufferAttribute, BufferGeometry, Group, Mesh, MeshBasicMaterial, SphereGeometry } from 'three';
+import {
+  BufferAttribute,
+  BufferGeometry,
+  Group,
+  Mesh,
+  MeshBasicMaterial,
+  SphereGeometry,
+} from 'three';
 import {
   boxCenter,
   boxSize,
@@ -24,7 +31,10 @@ describe('box maths', () => {
 
   it('circumscribes a box with half its diagonal', () => {
     expect(sphereRadiusFromBox([0, 0, 0], [2, 0, 0])).toBe(1);
-    expect(sphereRadiusFromBox([0, 0, 0], [10, 20, 30])).toBeCloseTo(Math.hypot(10, 20, 30) / 2, 12);
+    expect(sphereRadiusFromBox([0, 0, 0], [10, 20, 30])).toBeCloseTo(
+      Math.hypot(10, 20, 30) / 2,
+      12,
+    );
   });
 
   it('reports a zero-size box as finite with radius zero', () => {
@@ -48,7 +58,10 @@ describe('sphere union', () => {
   });
 
   it('grows along the axis between two disjoint spheres', () => {
-    const merged = mergeSpheres({ center: [-10, 0, 0], radius: 1 }, { center: [10, 0, 0], radius: 1 });
+    const merged = mergeSpheres(
+      { center: [-10, 0, 0], radius: 1 },
+      { center: [10, 0, 0], radius: 1 },
+    );
     expect(merged.radius).toBeCloseTo(11, 9);
     expect(merged.center[0]).toBeCloseTo(0, 9);
   });
@@ -79,7 +92,13 @@ describe('sphere union', () => {
 
 describe('niceStep and grid sizing', () => {
   it.each([
-    [0.037, 0.02], [370, 200], [1, 1], [9.9, 5], [4.9, 2], [0.11, 0.1], [1000, 1000],
+    [0.037, 0.02],
+    [370, 200],
+    [1, 1],
+    [9.9, 5],
+    [4.9, 2],
+    [0.11, 0.1],
+    [1000, 1000],
   ])('niceStep(%f) === %f', (input, want) => {
     expect(niceStep(input)).toBeCloseTo(want, 12);
   });
@@ -120,10 +139,7 @@ function meshAt(position: Vec3, size = 1): Mesh {
   // A minimal axis-aligned cube corner cloud is enough to define a box.
   g.setAttribute(
     'position',
-    new BufferAttribute(
-      new Float32Array([-half, -half, -half, half, half, half]),
-      3,
-    ),
+    new BufferAttribute(new Float32Array([-half, -half, -half, half, half, half]), 3),
   );
   const m = new Mesh(g, new MeshBasicMaterial());
   m.position.set(position[0], position[1], position[2]);

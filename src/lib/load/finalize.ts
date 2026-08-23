@@ -53,7 +53,9 @@ export function finalize(raw: RawAsset, meta: FinalizeMeta): LoadedModel {
   // more specific diagnosis, so it wins. (A curves-only IGES really does reach here — OCCT
   // returns success with zero meshes; see docs/SPIKES.md S3.)
   if (stats.meshes === 0 && stats.points === 0) {
-    warnings.push(warn('degenerate-geometry', 'No renderable geometry was found in this file.', 'error'));
+    warnings.push(
+      warn('degenerate-geometry', 'No renderable geometry was found in this file.', 'error'),
+    );
   } else if (!stats.valid) {
     warnings.push(
       warn(

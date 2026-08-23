@@ -16,11 +16,7 @@ import { GizmoHelper, GizmoViewport } from '@react-three/drei';
 export function OrientationGizmo() {
   return (
     <GizmoHelper alignment="bottom-right" margin={[72, 72]}>
-      <GizmoViewport
-        disabled
-        axisColors={['#e06c75', '#98c379', '#5b8cff']}
-        labelColor="#e7e9ee"
-      />
+      <GizmoViewport disabled axisColors={['#e06c75', '#98c379', '#5b8cff']} labelColor="#e7e9ee" />
     </GizmoHelper>
   );
 }

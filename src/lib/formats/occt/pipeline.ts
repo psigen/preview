@@ -39,29 +39,19 @@ export function createOcctPipeline(format: OcctFormat): GeometryPipeline {
       ctx.signal.throwIfAborted();
 
       ctx.onProgress('Tessellating', null);
-      const result = occt.ReadFile(
-        format,
-        new Uint8Array(input.primary.bytes),
-        {
-          // Metres, so metersPerUnit is 1 and the contract needs no per-format special case.
-          linearUnit: 'meter',
-          linearDeflectionType: ctx.quality.cad.linearDeflectionType,
-          linearDeflection: ctx.quality.cad.linearDeflection,
-          angularDeflection: ctx.quality.cad.angularDeflection,
-        },
-      );
+      const result = occt.ReadFile(format, new Uint8Array(input.primary.bytes), {
+        // Metres, so metersPerUnit is 1 and the contract needs no per-format special case.
+        linearUnit: 'meter',
+        linearDeflectionType: ctx.quality.cad.linearDeflectionType,
+        linearDeflection: ctx.quality.cad.linearDeflection,
+        angularDeflection: ctx.quality.cad.angularDeflection,
+      });
       ctx.signal.throwIfAborted();
 
       const scene = convertOcctResult(result, input.primary.name);
       const warnings: LoadWarning[] = [];
       if (scene.meshes.some((m) => !m.normals)) {
-        warnings.push(
-          warn(
-            'no-normals',
-            'Some faces had no normals; they were derived.',
-            'info',
-          ),
-        );
+        warnings.push(warn('no-normals', 'Some faces had no normals; they were derived.', 'info'));
       }
 
       const output: TranscodeOutput = {

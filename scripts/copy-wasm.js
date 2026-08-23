@@ -83,7 +83,7 @@ const sha256 = (buf) => createHash('sha256').update(buf).digest('hex');
 let copied = 0;
 let skipped = 0;
 const missing = [];
-const manifest = { generatedBy: 'scripts/copy-wasm.mjs', entries: {} };
+const manifest = { generatedBy: 'scripts/copy-wasm.js', entries: {} };
 
 let skippedCad = 0;
 
@@ -122,7 +122,9 @@ for (const group of VENDOR) {
 if (missing.length) {
   const msg = `[copy-wasm] missing ${missing.length} source file(s):\n  ${missing.join('\n  ')}`;
   if (check) {
-    console.error(`${msg}\n[copy-wasm] run \`npm install\` (or \`npm run stage-wasm\`) before building.`);
+    console.error(
+      `${msg}\n[copy-wasm] run \`npm install\` (or \`npm run stage-wasm\`) before building.`,
+    );
     process.exit(1);
   }
   console.warn(msg);

@@ -28,7 +28,13 @@ const DEBUG_PORT = 9345;
 const PROFILE = '/tmp/preview-verify-profile';
 const CHROME = ['google-chrome', 'google-chrome-stable', 'chromium', 'chromium-browser'];
 
-const MIME = { '.html': 'text/html', '.js': 'text/javascript', '.css': 'text/css', '.json': 'application/json', '.wasm': 'application/wasm' };
+const MIME = {
+  '.html': 'text/html',
+  '.js': 'text/javascript',
+  '.css': 'text/css',
+  '.json': 'application/json',
+  '.wasm': 'application/wasm',
+};
 
 if (!existsSync(join(DIST, 'index.html'))) {
   console.error('[verify-viewer] no dist/ — run `npm run build` first.');
@@ -49,8 +55,11 @@ const server = createServer(async (req, res) => {
 await new Promise((r) => server.listen(PORT, r));
 
 const chromeBin = CHROME.find((c) => {
-  try { return require_('node:child_process').execSync(`command -v ${c}`, { stdio: 'pipe' }).length > 0; }
-  catch { return false; }
+  try {
+    return require_('node:child_process').execSync(`command -v ${c}`, { stdio: 'pipe' }).length > 0;
+  } catch {
+    return false;
+  }
 });
 if (!chromeBin) {
   console.error('[verify-viewer] no Chrome found on PATH; skipping.');
@@ -59,11 +68,20 @@ if (!chromeBin) {
 }
 
 await rm(PROFILE, { recursive: true, force: true });
-const chrome = spawn(chromeBin, [
-  '--headless=new', '--no-sandbox', '--disable-gpu-sandbox',
-  '--use-gl=swiftshader', '--enable-unsafe-swiftshader',
-  `--remote-debugging-port=${DEBUG_PORT}`, `--user-data-dir=${PROFILE}`, 'about:blank',
-], { stdio: 'ignore' });
+const chrome = spawn(
+  chromeBin,
+  [
+    '--headless=new',
+    '--no-sandbox',
+    '--disable-gpu-sandbox',
+    '--use-gl=swiftshader',
+    '--enable-unsafe-swiftshader',
+    `--remote-debugging-port=${DEBUG_PORT}`,
+    `--user-data-dir=${PROFILE}`,
+    'about:blank',
+  ],
+  { stdio: 'ignore' },
+);
 
 const cleanup = async (code) => {
   chrome.kill();
@@ -74,35 +92,62 @@ const cleanup = async (code) => {
 
 let target = null;
 for (let i = 0; i < 80 && !target; i++) {
-  try { target = (await (await fetch(`http://127.0.0.1:${DEBUG_PORT}/json`)).json()).find((t) => t.type === 'page'); } catch { /* not up yet */ }
+  try {
+    target = (await (await fetch(`http://127.0.0.1:${DEBUG_PORT}/json`)).json()).find(
+      (t) => t.type === 'page',
+    );
+  } catch {
+    /* not up yet */
+  }
   if (!target) await new Promise((r) => setTimeout(r, 250));
 }
-if (!target) { console.error('[verify-viewer] Chrome did not expose a debug target.'); await cleanup(2); }
+if (!target) {
+  console.error('[verify-viewer] Chrome did not expose a debug target.');
+  await cleanup(2);
+}
 
 const ws = new WebSocket(target.webSocketDebuggerUrl);
 let msgId = 0;
 const pending = new Map();
 const errors = [];
 const send = (method, params = {}) =>
-  new Promise((res) => { const id = ++msgId; pending.set(id, res); ws.send(JSON.stringify({ id, method, params })); });
+  new Promise((res) => {
+    const id = ++msgId;
+    pending.set(id, res);
+    ws.send(JSON.stringify({ id, method, params }));
+  });
 ws.onmessage = (ev) => {
   const m = JSON.parse(ev.data);
-  if (m.id && pending.has(m.id)) { pending.get(m.id)(m.result); pending.delete(m.id); }
+  if (m.id && pending.has(m.id)) {
+    pending.get(m.id)(m.result);
+    pending.delete(m.id);
+  }
   if (m.method === 'Runtime.exceptionThrown') errors.push(m.params.exceptionDetails.text);
-  if (m.method === 'Log.entryAdded' && m.params.entry.level === 'error') errors.push(m.params.entry.text);
+  if (m.method === 'Log.entryAdded' && m.params.entry.level === 'error')
+    errors.push(m.params.entry.text);
 };
-await new Promise((r) => { ws.onopen = r; });
+await new Promise((r) => {
+  ws.onopen = r;
+});
 await send('Runtime.enable');
 await send('Log.enable');
 await send('Page.enable');
-await send('Emulation.setDeviceMetricsOverride', { width: 900, height: 600, deviceScaleFactor: 1, mobile: false });
+await send('Emulation.setDeviceMetricsOverride', {
+  width: 900,
+  height: 600,
+  deviceScaleFactor: 1,
+  mobile: false,
+});
 await send('Page.navigate', { url: `http://localhost:${PORT}/index.html` });
 
 const evalJs = async (expression, awaitPromise = false) =>
-  (await send('Runtime.evaluate', { expression, returnByValue: true, awaitPromise }))?.result?.value;
+  (await send('Runtime.evaluate', { expression, returnByValue: true, awaitPromise }))?.result
+    ?.value;
 const wait = (ms) => new Promise((r) => setTimeout(r, ms));
 const setReducedMotion = async (value) => {
-  await send('Emulation.setEmulatedMedia', { features: [{ name: 'prefers-reduced-motion', value }] });
+  await send('Emulation.setEmulatedMedia', {
+    features: [{ name: 'prefers-reduced-motion', value }],
+  });
   const want = value === 'reduce';
   for (let i = 0; i < 40; i++) {
     const seen = await evalJs(`matchMedia('(prefers-reduced-motion: reduce)').matches`);
@@ -127,7 +172,8 @@ const reload = async () => {
 };
 
 /** Build a File in the page and dispatch a real DragEvent sequence at the document. */
-const dispatchDrag = (types, phases, name = 'x.stl', content = '') => evalJs(`
+const dispatchDrag = (types, phases, name = 'x.stl', content = '') =>
+  evalJs(`
 (() => {
   const dt = new DataTransfer();
   ${types.includes('Files') ? `dt.items.add(new File([${JSON.stringify(content)}], ${JSON.stringify(name)}));` : `dt.setData('text/plain', 'hello');`}
@@ -142,7 +188,9 @@ const overlayVisible = () => evalJs(`!!document.querySelector('.drop-overlay')`)
 await reload();
 
 const click = async (selector) => {
-  const ok = await evalJs(`(()=>{const e=document.querySelector('${selector}');if(!e)return false;e.click();return true;})()`);
+  const ok = await evalJs(
+    `(()=>{const e=document.querySelector('${selector}');if(!e)return false;e.click();return true;})()`,
+  );
   if (!ok) throw new Error(`no element matching ${selector}`);
   await wait(700);
 };
@@ -160,8 +208,12 @@ const diffPct = (a, b, tol = 8) => {
   if (a.width !== b.width || a.height !== b.height) return 100;
   let differing = 0;
   for (let i = 0; i < a.data.length; i += 4) {
-    if (Math.abs(a.data[i] - b.data[i]) > tol || Math.abs(a.data[i + 1] - b.data[i + 1]) > tol ||
-        Math.abs(a.data[i + 2] - b.data[i + 2]) > tol) differing++;
+    if (
+      Math.abs(a.data[i] - b.data[i]) > tol ||
+      Math.abs(a.data[i + 1] - b.data[i + 1]) > tol ||
+      Math.abs(a.data[i + 2] - b.data[i + 2]) > tol
+    )
+      differing++;
   }
   return (differing / (a.width * a.height)) * 100;
 };
@@ -177,7 +229,9 @@ const results = [];
 const check = (name, pass, detail = '') => results.push({ name, pass, detail });
 
 /** How long the camera takes to actually ARRIVE, measured by aria-pressed flipping. */
-const timeArrival = (from, to, idleMs) => evalJs(`
+const timeArrival = (from, to, idleMs) =>
+  evalJs(
+    `
 new Promise(async (resolve) => {
   document.querySelector('[data-view="${from}"]').click();
   await new Promise(r => setTimeout(r, ${idleMs}));
@@ -190,7 +244,9 @@ new Promise(async (resolve) => {
   };
   btn.click();
   requestAnimationFrame(tick);
-})`, true);
+})`,
+    true,
+  );
 
 try {
   // Reduced motion for the framing checks, so transitions settle deterministically.
@@ -206,10 +262,18 @@ try {
     await click('[data-view="iso"]');
     frames[sample] = await shot();
   }
-  check('the render is not blank', inkPct(frames['stl-mm']) > 2, `${inkPct(frames['stl-mm']).toFixed(1)}% ink`);
+  check(
+    'the render is not blank',
+    inkPct(frames['stl-mm']) > 2,
+    `${inkPct(frames['stl-mm']).toFixed(1)}% ink`,
+  );
   const dScale = diffPct(frames['stl-mm'], frames['stl-m']);
   const dHuge = diffPct(frames['stl-mm'], frames['stl-big']);
-  check('the same box authored in mm and in m frames identically', dScale < 0.5, `${dScale.toFixed(3)}% differ`);
+  check(
+    'the same box authored in mm and in m frames identically',
+    dScale < 0.5,
+    `${dScale.toFixed(3)}% differ`,
+  );
   check('a 1000x larger box frames identically', dHuge < 0.5, `${dHuge.toFixed(3)}% differ`);
 
   // A different format of the same shape must load and render, but is NOT pixel-comparable:
@@ -219,17 +283,26 @@ try {
   await waitFor(`!!document.querySelector('[data-view="iso"]')`);
   await click('[data-view="iso"]');
   const plyFrame = await shot();
-  check('a PLY sample loads and renders', inkPct(plyFrame) > 2, `${inkPct(plyFrame).toFixed(1)}% ink`);
+  check(
+    'a PLY sample loads and renders',
+    inkPct(plyFrame) > 2,
+    `${inkPct(plyFrame).toFixed(1)}% ink`,
+  );
 
   // The headline formats, each checked for the thing that makes it distinctive.
-  const statOf = (name) => evalJs(`document.querySelector('[data-stat="${name}"]')?.textContent ?? ''`);
+  const statOf = (name) =>
+    evalJs(`document.querySelector('[data-stat="${name}"]')?.textContent ?? ''`);
 
   await reload();
   await click('[data-sample="glb"]');
   await waitFor(`!!document.querySelector('[data-view="iso"]')`);
   await click('[data-view="iso"]');
   const glbFrame = await shot();
-  check('a GLB sample loads and renders', inkPct(glbFrame) > 2, `${inkPct(glbFrame).toFixed(1)}% ink`);
+  check(
+    'a GLB sample loads and renders',
+    inkPct(glbFrame) > 2,
+    `${inkPct(glbFrame).toFixed(1)}% ink`,
+  );
   check('glTF reports 12 triangles', (await statOf('triangles')) === '12');
   // The spec mandates metres, so the box must read as real millimetres, not bare units.
   const glbDims = await statOf('dimensions');
@@ -240,12 +313,20 @@ try {
   await waitFor(`!!document.querySelector('[data-view="iso"]')`);
   await click('[data-view="iso"]');
   const usdFrame = await shot();
-  check('a USD sample loads and renders', inkPct(usdFrame) > 2, `${inkPct(usdFrame).toFixed(1)}% ink`);
+  check(
+    'a USD sample loads and renders',
+    inkPct(usdFrame) > 2,
+    `${inkPct(usdFrame).toFixed(1)}% ink`,
+  );
   check('USD reports 12 triangles', (await statOf('triangles')) === '12');
   const usdDims = await statOf('dimensions');
   // The stage is authored in millimetres AND Z-up; both conversions must land it at
   // 10 x 20 x 30 mm, upright, the same as every other format of the same box.
-  check('USD converts its stage units and up-axis', /^10\.000 × 20\.000 × 30\.000 mm$/.test(usdDims), usdDims);
+  check(
+    'USD converts its stage units and up-axis',
+    /^10\.000 × 20\.000 × 30\.000 mm$/.test(usdDims),
+    usdDims,
+  );
 
   // OBJ, whose materials live in a separate .mtl. Loading the sample drops both files, so
   // this exercises the same companion resolution a folder drop uses.
@@ -254,12 +335,21 @@ try {
   await waitFor(`!!document.querySelector('[data-view="iso"]')`, 120);
   await click('[data-view="iso"]');
   const objFrame = await shot();
-  check('an OBJ sample loads and renders', inkPct(objFrame) > 2, `${inkPct(objFrame).toFixed(1)}% ink`);
+  check(
+    'an OBJ sample loads and renders',
+    inkPct(objFrame) > 2,
+    `${inkPct(objFrame).toFixed(1)}% ink`,
+  );
   check('OBJ reports 12 triangles', (await statOf('triangles')) === '12');
   // No missing-companion warning means the .mtl really was found through the drop.
   const objWarnings = await evalJs(
-    `[...document.querySelectorAll('.warning-list li')].map(e => e.textContent).join(' | ')`);
-  check('the companion .mtl was resolved', !/not included/i.test(objWarnings), objWarnings || '(none)');
+    `[...document.querySelectorAll('.warning-list li')].map(e => e.textContent).join(' | ')`,
+  );
+  check(
+    'the companion .mtl was resolved',
+    !/not included/i.test(objWarnings),
+    objWarnings || '(none)',
+  );
   // OBJ declares no units, so the ruler must not invent any.
   const objDims = await statOf('dimensions');
   check('OBJ reports abstract units', / u$/.test(objDims), objDims);
@@ -273,7 +363,11 @@ try {
   await click('[data-view="iso"]');
   const greyFrame = await shot();
   const objVsGrey = diffPct(objFrame, greyFrame);
-  check('the MTL colour reaches the renderer', objVsGrey > 5, `${objVsGrey.toFixed(1)}% of pixels differ from the default grey`);
+  check(
+    'the MTL colour reaches the renderer',
+    objVsGrey > 5,
+    `${objVsGrey.toFixed(1)}% of pixels differ from the default grey`,
+  );
 
   // 8b. The worker must actually be doing the work, and CAD parsing must not add a
   //     main-thread block. Passing checks prove nothing here if the code silently fell back
@@ -329,7 +423,11 @@ try {
   await waitFor(`!!document.querySelector('[data-view="iso"]')`, 200);
   await click('[data-view="iso"]');
   const stepFrame = await shot();
-  check('a STEP sample loads and renders', inkPct(stepFrame) > 2, `${inkPct(stepFrame).toFixed(1)}% ink`);
+  check(
+    'a STEP sample loads and renders',
+    inkPct(stepFrame) > 2,
+    `${inkPct(stepFrame).toFixed(1)}% ink`,
+  );
   check('STEP tessellates to 12 triangles', (await statOf('triangles')) === '12');
   const stepDims = await statOf('dimensions');
   check(
@@ -348,27 +446,39 @@ try {
     await click(`[data-view="${v}"]`);
     viewFrames[v] = await shot();
     const pressedNow = await evalJs(
-      `[...document.querySelectorAll('[data-view]')].filter(b=>b.getAttribute('aria-pressed')==='true').map(b=>b.dataset.view).join(',')`);
-    check(`${v}: renders and reports aria-pressed`, pressedNow === v, `aria-pressed=${pressedNow || 'none'}`);
+      `[...document.querySelectorAll('[data-view]')].filter(b=>b.getAttribute('aria-pressed')==='true').map(b=>b.dataset.view).join(',')`,
+    );
+    check(
+      `${v}: renders and reports aria-pressed`,
+      pressedNow === v,
+      `aria-pressed=${pressedNow || 'none'}`,
+    );
   }
   let differingPairs = 0;
   for (let i = 0; i < views.length; i++)
     for (let j = i + 1; j < views.length; j++)
       if (diffPct(viewFrames[views[i]], viewFrames[views[j]]) > 1) differingPairs++;
-  check('the seven views are visually distinct', differingPairs >= 18, `${differingPairs}/21 pairs differ`);
+  check(
+    'the seven views are visually distinct',
+    differingPairs >= 18,
+    `${differingPairs}/21 pairs differ`,
+  );
 
   await click('[data-view="fit"]');
   check('Fit runs without error', true);
 
   // Keyboard shortcuts. These existed, were silently dropped by a refactor, and nothing
   // noticed — so they are checked end to end now, not only as pure key mapping.
-  const pressKey = (key) => evalJs(`(() => {
+  const pressKey = (key) =>
+    evalJs(`(() => {
     document.body.dispatchEvent(new KeyboardEvent('keydown',
       { key: ${JSON.stringify(key)}, bubbles: true, cancelable: true }));
     return true;
   })()`);
-  const pressedView = () => evalJs(
-    `[...document.querySelectorAll('[data-view]')].find(b=>b.getAttribute('aria-pressed')==='true')?.dataset.view ?? ''`);
+  const pressedView = () =>
+    evalJs(
+      `[...document.querySelectorAll('[data-view]')].find(b=>b.getAttribute('aria-pressed')==='true')?.dataset.view ?? ''`,
+    );
 
   await click('[data-view="iso"]');
   await pressKey('5');
@@ -398,11 +508,17 @@ try {
   // 5. Reduced motion must be respected.
   await setReducedMotion('reduce');
   const reduced = await timeArrival('front', 'bottom', 400);
-  check('prefers-reduced-motion snaps instantly', reduced !== null && reduced < 120, `${Math.round(reduced)} ms`);
+  check(
+    'prefers-reduced-motion snaps instantly',
+    reduced !== null && reduced < 120,
+    `${Math.round(reduced)} ms`,
+  );
   // 6. Drag and drop.
   await reload();
-  check('the empty state is shown before anything is loaded',
-    await evalJs(`!!document.querySelector('.empty-state')`));
+  check(
+    'the empty state is shown before anything is loaded',
+    await evalJs(`!!document.querySelector('.empty-state')`),
+  );
 
   await dispatchDrag(['Files'], ['dragenter', 'dragover']);
   await wait(120);
@@ -421,19 +537,32 @@ try {
   // A real drop of a real STL.
   const stlAscii = [
     'solid box',
-    ...Array.from({ length: 1 }, () =>
-      'facet normal 0 0 1\n outer loop\n  vertex 0 0 0\n  vertex 1 0 0\n  vertex 0 1 0\n endloop\nendfacet'),
+    ...Array.from(
+      { length: 1 },
+      () =>
+        'facet normal 0 0 1\n outer loop\n  vertex 0 0 0\n  vertex 1 0 0\n  vertex 0 1 0\n endloop\nendfacet',
+    ),
     'endsolid box',
   ].join('\n');
   await dispatchDrag(['Files'], ['dragenter', 'dragover', 'drop'], 'dropped.stl', stlAscii);
-  const loaded = await waitFor(`document.querySelector('[data-stat="triangles"]')?.textContent === '1'`, 40);
+  const loaded = await waitFor(
+    `document.querySelector('[data-stat="triangles"]')?.textContent === '1'`,
+    40,
+  );
   check('dropping an STL loads it', loaded);
   check('the overlay is gone after a drop', !(await overlayVisible()));
-  check('the empty state is replaced by the viewer',
-    !(await evalJs(`!!document.querySelector('.empty-state')`)));
+  check(
+    'the empty state is replaced by the viewer',
+    !(await evalJs(`!!document.querySelector('.empty-state')`)),
+  );
 
   // An unrecognised file must explain itself rather than fail silently.
-  await dispatchDrag(['Files'], ['dragenter', 'dragover', 'drop'], 'notes.txt', 'just prose, not a model');
+  await dispatchDrag(
+    ['Files'],
+    ['dragenter', 'dragover', 'drop'],
+    'notes.txt',
+    'just prose, not a model',
+  );
   const errored = await waitFor(`!!document.querySelector('[role="alert"]')`, 30);
   check('dropping an unsupported file reports an error', errored);
   const errText = await evalJs(`document.querySelector('[role="alert"]')?.textContent ?? ''`);
@@ -475,7 +604,9 @@ try {
       return true;
     })()`);
     const ok = await waitFor(
-      `(document.querySelector('.filename')?.textContent ?? '').includes('big${i}.stl')`, 80);
+      `(document.querySelector('.filename')?.textContent ?? '').includes('big${i}.stl')`,
+      80,
+    );
     if (!ok) throw new Error(`big load ${i} did not complete`);
   };
 
@@ -485,7 +616,7 @@ try {
   const heapAfterSix = await heap();
 
   const growthMb = (heapAfterSix - heapAfterFirst) / (1024 * 1024);
-  const perModelMb = 8000 * 3 * 3 * 4 * 2 / (1024 * 1024); // positions + normals, Float32
+  const perModelMb = (8000 * 3 * 3 * 4 * 2) / (1024 * 1024); // positions + normals, Float32
   check(
     'replacing a model five times does not accumulate geometry',
     heapAfterFirst === 0 || growthMb < perModelMb * 2,
@@ -504,17 +635,23 @@ try {
     // stale match would let a failed load pass.
     await dispatchDrag(['Files'], ['dragenter', 'dragover', 'drop'], `round${i}.stl`, stlAscii);
     const ok = await waitFor(
-      `(document.querySelector('.filename')?.textContent ?? '').includes('round${i}.stl')`, 40);
+      `(document.querySelector('.filename')?.textContent ?? '').includes('round${i}.stl')`,
+      40,
+    );
     if (!ok) throw new Error(`load ${i + 1} of 5 did not complete`);
   }
   await click('[data-view="iso"]');
   const afterFive = await shot();
-  check('five sequential loads all succeed and still render', inkPct(afterFive) > 1,
-    `${inkPct(afterFive).toFixed(1)}% ink`);
+  check(
+    'five sequential loads all succeed and still render',
+    inkPct(afterFive) > 1,
+    `${inkPct(afterFive).toFixed(1)}% ink`,
+  );
   // 8. The measurement ruler. The requirement is explicitly that it reports REAL units for
   //    a format that declares them and ABSTRACT units for one that does not, so both are
   //    checked, on the same physical box.
-  const clickCanvas = (dx, dy) => evalJs(`(() => {
+  const clickCanvas = (dx, dy) =>
+    evalJs(`(() => {
     const c = document.querySelector('canvas');
     const r = c.getBoundingClientRect();
     const x = r.left + r.width / 2 + ${dx};
@@ -525,8 +662,10 @@ try {
     c.dispatchEvent(new PointerEvent('pointerup', opts));
     return true;
   })()`);
-  const rows = () => evalJs(
-    `[...document.querySelectorAll('[data-measure-row]')].map(b => b.querySelector('.measure-value').textContent)`);
+  const rows = () =>
+    evalJs(
+      `[...document.querySelectorAll('[data-measure-row]')].map(b => b.querySelector('.measure-value').textContent)`,
+    );
 
   const measureOn = async (sample) => {
     await reload();
@@ -543,9 +682,17 @@ try {
 
   // A USD stage declares millimetres, so the ruler must report a real length.
   const usdValue = await measureOn('usda');
-  check('measuring a USD model reports real units', /^[\d.]+\s*(mm|cm|m)$/.test(usdValue), usdValue);
+  check(
+    'measuring a USD model reports real units',
+    /^[\d.]+\s*(mm|cm|m)$/.test(usdValue),
+    usdValue,
+  );
   const usdNumber = parseFloat(usdValue);
-  check('the USD measurement is inside the model', usdNumber > 0 && usdNumber <= 40, `${usdNumber}`);
+  check(
+    'the USD measurement is inside the model',
+    usdNumber > 0 && usdNumber <= 40,
+    `${usdNumber}`,
+  );
 
   // STL declares nothing, so the same click must give a bare number, never an invented unit.
   const stlValue = await measureOn('stl-mm');
@@ -569,7 +716,9 @@ try {
 
   await clickCanvas(-30, 10);
   await wait(250);
-  await evalJs(`window.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true }))`);
+  await evalJs(
+    `window.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true }))`,
+  );
   await wait(250);
   await clickCanvas(40, -20);
   await wait(400);
@@ -579,7 +728,8 @@ try {
 }
 
 console.log('');
-for (const r of results) console.log(`  ${r.pass ? 'PASS' : 'FAIL'}  ${r.name}${r.detail ? `   [${r.detail}]` : ''}`);
+for (const r of results)
+  console.log(`  ${r.pass ? 'PASS' : 'FAIL'}  ${r.name}${r.detail ? `   [${r.detail}]` : ''}`);
 const failed = results.filter((r) => !r.pass).length;
 if (errors.length) {
   console.log('\n  browser errors:');

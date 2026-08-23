@@ -8,13 +8,7 @@
  */
 import type { FormatId } from '../format-id';
 import type { ScenePayload } from '../asset/payload';
-import type {
-  LoadWarning,
-  Orientation,
-  RawAsset,
-  UnitInfo,
-  UpAxis,
-} from '../asset/types';
+import type { LoadWarning, Orientation, RawAsset, UnitInfo, UpAxis } from '../asset/types';
 
 /** Tessellation quality, for formats that convert curved surfaces into triangles. */
 export interface QualityOptions {

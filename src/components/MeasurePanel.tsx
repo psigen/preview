@@ -28,7 +28,13 @@ const SNAP_WORD: Record<SnapKind, string> = { vertex: 'vertex', edge: 'edge', su
  * noise to a screen reader. This panel is the ordered, focusable, fully-labelled version.
  */
 export function MeasurePanel({
-  state, dispatch, metersPerUnit, unit, system, onUnitChange, onZoomTo,
+  state,
+  dispatch,
+  metersPerUnit,
+  unit,
+  system,
+  onUnitChange,
+  onZoomTo,
 }: Props) {
   const [confirmClear, setConfirmClear] = useState(false);
   const measuring = state.mode === 'point-to-point';
@@ -47,9 +53,7 @@ export function MeasurePanel({
           className={measuring ? 'primary' : ''}
           data-action="measure-toggle"
           aria-pressed={measuring}
-          onClick={() =>
-            dispatch({ type: 'setMode', mode: measuring ? 'off' : 'point-to-point' })
-          }
+          onClick={() => dispatch({ type: 'setMode', mode: measuring ? 'off' : 'point-to-point' })}
         >
           {measuring ? 'Measuring' : 'Measure'}
         </button>
@@ -80,9 +84,7 @@ export function MeasurePanel({
       )}
 
       {metersPerUnit === null && state.items.length > 0 && (
-        <p className="hint">
-          This file declares no units, so lengths are shown in model units.
-        </p>
+        <p className="hint">This file declares no units, so lengths are shown in model units.</p>
       )}
 
       {state.items.length > 0 && (
@@ -108,7 +110,12 @@ export function MeasurePanel({
                   </span>
                 </button>
                 <div className="measure-actions">
-                  <button type="button" className="link" title="Zoom to" onClick={() => onZoomTo(m.id)}>
+                  <button
+                    type="button"
+                    className="link"
+                    title="Zoom to"
+                    onClick={() => onZoomTo(m.id)}
+                  >
                     ⌖
                   </button>
                   <button

@@ -6,7 +6,12 @@
  * exercised without dragging a parser in.
  */
 import { buildScene, type MeshPayload, type ScenePayload } from '../../src/lib/asset/payload';
-import { UNITS_DECLARED, UNITS_UNKNOWN, type RawAsset, type UpAxis } from '../../src/lib/asset/types';
+import {
+  UNITS_DECLARED,
+  UNITS_UNKNOWN,
+  type RawAsset,
+  type UpAxis,
+} from '../../src/lib/asset/types';
 import { corners, FACE_NORMALS, TRIS, type Extents } from '../../src/lib/samples/box';
 
 const DEFAULT_EXTENTS: [number, number, number] = [10, 20, 30];

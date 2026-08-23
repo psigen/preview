@@ -1,5 +1,14 @@
 import { describe, expect, it, vi } from 'vitest';
-import { BufferAttribute, BufferGeometry, Group, Matrix4, Mesh, MeshBasicMaterial, Quaternion, Vector3 } from 'three';
+import {
+  BufferAttribute,
+  BufferGeometry,
+  Group,
+  Matrix4,
+  Mesh,
+  MeshBasicMaterial,
+  Quaternion,
+  Vector3,
+} from 'three';
 import { DIAGONAL_ABSTRACT, DIAGONAL_M } from '../../../test/gen/box';
 import { buildScene } from '../asset/payload';
 import { Z_UP_TO_Y_UP_X_ROTATION, upAxisRotationX } from '../asset/orient';
@@ -8,7 +17,8 @@ import { stubPayload, stubRawAsset } from '../../../test/gen/stubAsset';
 import { finalize, type FinalizeMeta } from './finalize';
 
 const META: FinalizeMeta = { id: 1, name: 'test', format: 'stl', bytes: 123, parseMs: 4 };
-const fin = (raw: RawAsset, meta: Partial<FinalizeMeta> = {}) => finalize(raw, { ...META, ...meta });
+const fin = (raw: RawAsset, meta: Partial<FinalizeMeta> = {}) =>
+  finalize(raw, { ...META, ...meta });
 
 const diagonalOf = (size: readonly [number, number, number]) => Math.hypot(...size);
 
@@ -45,7 +55,12 @@ describe('the wrapper', () => {
     // A loader that baked metersPerUnit into its own root, as USDLoader does.
     const inner = buildScene(stubPayload([10, 20, 30]));
     inner.scale.setScalar(0.001);
-    const model = fin({ object: inner, units: UNITS_DECLARED(1), sourceUpAxis: 'Y', orientation: 'y-up' });
+    const model = fin({
+      object: inner,
+      units: UNITS_DECLARED(1),
+      sourceUpAxis: 'Y',
+      orientation: 'y-up',
+    });
     model.object.scale.setScalar(5); // the app scales the wrapper
     expect(inner.scale.x).toBe(0.001); // the baked scale is untouched
   });
@@ -65,7 +80,12 @@ describe('no fit or normalisation scale is ever baked in', () => {
   it('reports a loader-baked unit scale rather than hiding it', () => {
     const inner = buildScene(stubPayload([10, 20, 30]));
     inner.scale.setScalar(0.001);
-    const model = fin({ object: inner, units: UNITS_DECLARED(1), sourceUpAxis: 'Y', orientation: 'y-up' });
+    const model = fin({
+      object: inner,
+      units: UNITS_DECLARED(1),
+      sourceUpAxis: 'Y',
+      orientation: 'y-up',
+    });
     const scale = new Vector3();
     model.worldFromFile.decompose(new Vector3(), new Quaternion(), scale);
     expect(scale.x).toBeCloseTo(0.001, 12);
@@ -115,7 +135,10 @@ describe('the canonical diagonal survives orientation and units', () => {
       const model = fin(stubRawAsset({ extents, sourceUpAxis: upAxis, metersPerUnit: 0.001 }));
       const worldDiagonal = diagonalOf(model.stats.size);
       expect(worldDiagonal).toBeCloseTo(DIAGONAL_ABSTRACT, 6);
-      expect(model.units.known && worldDiagonal * model.units.metersPerUnit).toBeCloseTo(DIAGONAL_M, 12);
+      expect(model.units.known && worldDiagonal * model.units.metersPerUnit).toBeCloseTo(
+        DIAGONAL_M,
+        12,
+      );
     }
   });
 
@@ -212,7 +235,12 @@ describe('warnings', () => {
     g.setAttribute('position', new BufferAttribute(new Float32Array([0, 0, 0, NaN, 1, 2]), 3));
     const root = new Group();
     root.add(new Mesh(g, new MeshBasicMaterial()));
-    const model = fin({ object: root, units: UNITS_DECLARED(1), sourceUpAxis: 'Y', orientation: 'file' });
+    const model = fin({
+      object: root,
+      units: UNITS_DECLARED(1),
+      sourceUpAxis: 'Y',
+      orientation: 'file',
+    });
     expect(model.warnings.map((w) => w.code)).toContain('non-finite-geometry');
     expect(model.warnings.map((w) => w.code)).not.toContain('degenerate-geometry');
   });

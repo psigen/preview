@@ -1,19 +1,35 @@
 import { describe, expect, it } from 'vitest';
 import {
-  BufferAttribute, BufferGeometry, Group, InstancedMesh, LineSegments, Mesh,
-  MeshStandardMaterial, Points, Texture,
+  BufferAttribute,
+  BufferGeometry,
+  Group,
+  InstancedMesh,
+  LineSegments,
+  Mesh,
+  MeshStandardMaterial,
+  Points,
+  Texture,
 } from 'three';
 import { computeStats } from './stats';
 
 const META = { bytes: 0, parseMs: 0, animations: 0, sourceSize: [0, 0, 0] as const };
 
-function geom(triangles: number, opts: { indexed?: boolean; groups?: number } = {}): BufferGeometry {
+function geom(
+  triangles: number,
+  opts: { indexed?: boolean; groups?: number } = {},
+): BufferGeometry {
   const verts = triangles * 3;
   const g = new BufferGeometry();
   const positions = new Float32Array(verts * 3);
   for (let i = 0; i < positions.length; i++) positions[i] = (i % 7) - 3;
   g.setAttribute('position', new BufferAttribute(positions, 3));
-  if (opts.indexed) g.setIndex(new BufferAttribute(new Uint32Array(verts).map((_, i) => i), 1));
+  if (opts.indexed)
+    g.setIndex(
+      new BufferAttribute(
+        new Uint32Array(verts).map((_, i) => i),
+        1,
+      ),
+    );
   if (opts.groups) {
     const per = verts / opts.groups;
     for (let i = 0; i < opts.groups; i++) g.addGroup(i * per, per, i);

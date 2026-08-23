@@ -49,82 +49,88 @@ export function useModelLoader(): ModelLoaderState {
     [],
   );
 
-  const run = useCallback(async (
-    primary: DroppedFile,
-    siblings: ReadonlyMap<string, DroppedFile>,
-    notice: string | null,
-  ) => {
-    const token = ++requestRef.current;
-    setBusy(`Reading ${primary.file.name}…`);
-    // `notice` survives the reset: a partial folder scan still loads, and the caveat is the
-    // whole point. Clearing it here is what previously made that warning unreachable.
-    setError(notice);
-    setPendingLarge(null);
+  const run = useCallback(
+    async (
+      primary: DroppedFile,
+      siblings: ReadonlyMap<string, DroppedFile>,
+      notice: string | null,
+    ) => {
+      const token = ++requestRef.current;
+      setBusy(`Reading ${primary.file.name}…`);
+      // `notice` survives the reset: a partial folder scan still loads, and the caveat is the
+      // whole point. Clearing it here is what previously made that warning unreachable.
+      setError(notice);
+      setPendingLarge(null);
 
-    try {
-      const bytes = await primary.file.arrayBuffer();
-      if (requestRef.current !== token) return;
+      try {
+        const bytes = await primary.file.arrayBuffer();
+        if (requestRef.current !== token) return;
 
-      // Sidecars: a .gltf needs its .bin, an OBJ needs its .mtl, and both need textures.
-      // Read up to a budget rather than unconditionally, because a dropped folder can carry
-      // far more than the model itself.
-      const companions = new Map<string, AssetFile>();
-      let companionBytes = 0;
-      let skipped = 0;
-      for (const [path, sibling] of siblings) {
-        if (companionBytes + sibling.file.size > LIMITS.companionBudgetBytes) {
-          skipped += 1;
-          continue;
+        // Sidecars: a .gltf needs its .bin, an OBJ needs its .mtl, and both need textures.
+        // Read up to a budget rather than unconditionally, because a dropped folder can carry
+        // far more than the model itself.
+        const companions = new Map<string, AssetFile>();
+        let companionBytes = 0;
+        let skipped = 0;
+        for (const [path, sibling] of siblings) {
+          if (companionBytes + sibling.file.size > LIMITS.companionBudgetBytes) {
+            skipped += 1;
+            continue;
+          }
+          companionBytes += sibling.file.size;
+          companions.set(path, { name: path, path, bytes: await sibling.file.arrayBuffer() });
         }
-        companionBytes += sibling.file.size;
-        companions.set(path, { name: path, path, bytes: await sibling.file.arrayBuffer() });
+        if (requestRef.current !== token) return;
+
+        const input: LoadInput = {
+          primary: { name: primary.path, path: primary.path, bytes },
+          companions,
+        };
+
+        if (skipped > 0) {
+          setError(`${skipped} companion file(s) were too large to read and were skipped.`);
+        }
+
+        const next = await loadAsset(input, {
+          onProgress: (phase) => {
+            if (requestRef.current === token) setBusy(`${phase}…`);
+          },
+        });
+
+        if (requestRef.current !== token) {
+          next.dispose();
+          return;
+        }
+
+        const previous = currentRef.current;
+        currentRef.current = next;
+        setModel(next);
+        if (previous) previous.dispose();
+      } catch (err) {
+        if (requestRef.current !== token) return;
+        const message = err instanceof Error ? err.message : String(err);
+        setError(`${message} Supported files: ${acceptAttribute().replaceAll(',', ' ')}`);
+      } finally {
+        if (requestRef.current === token) setBusy(null);
       }
-      if (requestRef.current !== token) return;
-
-      const input: LoadInput = {
-        primary: { name: primary.path, path: primary.path, bytes },
-        companions,
-      };
-
-      if (skipped > 0) {
-        setError(`${skipped} companion file(s) were too large to read and were skipped.`);
-      }
-
-      const next = await loadAsset(input, {
-        onProgress: (phase) => {
-          if (requestRef.current === token) setBusy(`${phase}…`);
-        },
-      });
-
-      if (requestRef.current !== token) {
-        next.dispose();
-        return;
-      }
-
-      const previous = currentRef.current;
-      currentRef.current = next;
-      setModel(next);
-      if (previous) previous.dispose();
-    } catch (err) {
-      if (requestRef.current !== token) return;
-      const message = err instanceof Error ? err.message : String(err);
-      setError(`${message} Supported files: ${acceptAttribute().replaceAll(',', ' ')}`);
-    } finally {
-      if (requestRef.current === token) setBusy(null);
-    }
-  }, []);
+    },
+    [],
+  );
 
   const open = useCallback(
     (files: readonly DroppedFile[], truncated = false) => {
       const { primary, companions } = selectPrimary(files);
 
       if (!primary) {
-        const names = files.slice(0, 3).map((f) => f.path).join(', ');
+        const names = files
+          .slice(0, 3)
+          .map((f) => f.path)
+          .join(', ');
         setError(
           files.length === 0
             ? 'That drop contained no files.'
             : `Nothing in that drop can be opened${names ? ` (${names})` : ''}. ` +
-              `Supported files: ${acceptAttribute().replaceAll(',', ' ')}`,
+                `Supported files: ${acceptAttribute().replaceAll(',', ' ')}`,
         );
         return;
       }

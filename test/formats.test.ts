@@ -94,7 +94,10 @@ describe.each(CASES)('$name', (testCase) => {
       expect(model.units.known).toBe(false);
     } else {
       expect(model.units.known).toBe(true);
-      expect(model.units.known && model.units.metersPerUnit).toBeCloseTo(testCase.expectMetersPerUnit, 12);
+      expect(model.units.known && model.units.metersPerUnit).toBeCloseTo(
+        testCase.expectMetersPerUnit,
+        12,
+      );
     }
     model.dispose();
   });
@@ -137,7 +140,9 @@ describe.each(CASES)('$name', (testCase) => {
 
   it('raises exactly the expected warnings', async () => {
     const model = await load();
-    expect([...model.warnings.map((w) => w.code)].sort()).toEqual([...testCase.expectWarnings].sort());
+    expect([...model.warnings.map((w) => w.code)].sort()).toEqual(
+      [...testCase.expectWarnings].sort(),
+    );
     model.dispose();
   });
 
@@ -168,16 +173,18 @@ describe('payload counts agree with the built scene', () => {
     const pipeline = await descriptor.pipeline();
     if (pipeline.kind !== 'geometry') return;
 
-    const out = await pipeline.transcode(
-      singleFileInput(testCase.fileName, testCase.bytes()),
-      {
-        onProgress: () => {},
-        warn: () => {},
-        signal: new AbortController().signal,
-        quality: DEFAULT_QUALITY,
-      },
-    );
-    const derived = computeStats(buildScene(out.scene), { bytes: 0, parseMs: 0, animations: 0, sourceSize: [0, 0, 0] });
+    const out = await pipeline.transcode(singleFileInput(testCase.fileName, testCase.bytes()), {
+      onProgress: () => {},
+      warn: () => {},
+      signal: new AbortController().signal,
+      quality: DEFAULT_QUALITY,
+    });
+    const derived = computeStats(buildScene(out.scene), {
+      bytes: 0,
+      parseMs: 0,
+      animations: 0,
+      sourceSize: [0, 0, 0],
+    });
 
     expect(out.counts.triangles).toBe(derived.triangles);
     expect(out.counts.vertices).toBe(derived.vertices);
@@ -191,14 +198,19 @@ describe('payload counts agree with the built scene', () => {
 
 describe('orchestration', () => {
   it('reports an unrecognised file clearly', async () => {
-    const bytes = new TextEncoder().encode('just some prose, not a model at all\n').buffer as ArrayBuffer;
-    await expect(loadAsset(singleFileInput('notes.txt', bytes))).rejects.toThrow(UnsupportedFormatError);
+    const bytes = new TextEncoder().encode('just some prose, not a model at all\n')
+      .buffer as ArrayBuffer;
+    await expect(loadAsset(singleFileInput('notes.txt', bytes))).rejects.toThrow(
+      UnsupportedFormatError,
+    );
   });
 
   it('names the format when it is recognised but not implemented yet', async () => {
     // 3MF is detected confidently, but has no pipeline in this build.
     const threemf = (await import('./gen/writers')).threemf('millimeter');
-    await expect(loadAsset(singleFileInput('box.3mf', threemf))).rejects.toThrow(/does not support yet/i);
+    await expect(loadAsset(singleFileInput('box.3mf', threemf))).rejects.toThrow(
+      /does not support yet/i,
+    );
   });
 
   it('honours an explicit format hint over the bytes', async () => {

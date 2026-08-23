@@ -120,7 +120,11 @@ export function objMtl(ext: Extents): { obj: ArrayBuffer; mtl: ArrayBuffer; mtlN
   for (const v of c) o += `v ${v[0]} ${v[1]} ${v[2]}\n`;
   for (const t of TRIS) o += `f ${t[0] + 1} ${t[1] + 1} ${t[2] + 1}\n`;
   const mtl = 'newmtl boxmat\nKd 0.80 0.35 0.20\nKs 0.10 0.10 0.10\nNs 32.0\nd 1.0\nillum 2\n';
-  return { obj: toArrayBuffer(enc.encode(o)), mtl: toArrayBuffer(enc.encode(mtl)), mtlName: 'box.mtl' };
+  return {
+    obj: toArrayBuffer(enc.encode(o)),
+    mtl: toArrayBuffer(enc.encode(mtl)),
+    mtlName: 'box.mtl',
+  };
 }
 
 /* --------------------------------------------------------------- glTF / GLB */
@@ -171,7 +175,11 @@ export function gltfSeparate(
 ): { gltf: ArrayBuffer; bin: ArrayBuffer; binName: string } {
   const { json, bin } = gltfParts(ext);
   (json.buffers as Record<string, unknown>[])[0]!.uri = binName;
-  return { gltf: toArrayBuffer(enc.encode(JSON.stringify(json, null, 2))), bin: toArrayBuffer(bin), binName };
+  return {
+    gltf: toArrayBuffer(enc.encode(JSON.stringify(json, null, 2))),
+    bin: toArrayBuffer(bin),
+    binName,
+  };
 }
 
 export function glb(ext: Extents): ArrayBuffer {
@@ -212,7 +220,9 @@ export function usda(metersPerUnit: number, upAxis: 'Y' | 'Z'): ArrayBuffer {
   const s = 1e-3 / metersPerUnit;
   const base = { x: 10 * s, y: 20 * s, z: 30 * s };
   const e: Extents = upAxis === 'Z' ? { x: base.x, y: base.z, z: base.y } : base;
-  const pts = corners(e).map((v) => `(${v[0]}, ${v[1]}, ${v[2]})`).join(', ');
+  const pts = corners(e)
+    .map((v) => `(${v[0]}, ${v[1]}, ${v[2]})`)
+    .join(', ');
   return toArrayBuffer(
     enc.encode(`#usda 1.0
 (
@@ -241,7 +251,6 @@ function toArrayBuffer(u8: Uint8Array): ArrayBuffer {
 }
 
 /* ------------------------------------------------------- USDZ / 3MF (ZIP) */
-
 
 /**
  * USDZ is an uncompressed ZIP whose FIRST entry is the root layer. Not byte-for-byte
@@ -296,7 +305,9 @@ export function threemf(unit: 'millimeter' | 'inch' | 'meter'): ArrayBuffer {
 export function usdcMagicOnly(): ArrayBuffer {
   const u8 = new Uint8Array(64);
   u8.set(enc.encode('PXR-USDC'), 0);
-  u8[8] = 0; u8[9] = 8; u8[10] = 0; // version 0.8.0
+  u8[8] = 0;
+  u8[9] = 8;
+  u8[10] = 0; // version 0.8.0
   return toArrayBuffer(u8);
 }
 

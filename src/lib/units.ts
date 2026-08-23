@@ -42,6 +42,11 @@ export interface UnitDef {
  */
 export const SIGNIFICANT_FIGURES = 5;
 
+/**
+ * Formatting is pinned: this is a lookup table, aligned so the columns compare down the
+ * page. One property per line turns 7 rows into 49 and it stops reading as a table.
+ */
+// prettier-ignore
 export const UNITS: Readonly<Record<UnitId, UnitDef>> = Object.freeze({
   mm: { id: 'mm', label: 'millimetre', plural: 'millimetres', metersPer: 1e-3, abstract: false, minDecimals: 2, maxDecimals: 3 },
   cm: { id: 'cm', label: 'centimetre', plural: 'centimetres', metersPer: 1e-2, abstract: false, minDecimals: 2, maxDecimals: 3 },

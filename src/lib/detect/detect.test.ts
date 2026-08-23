@@ -82,10 +82,28 @@ interface PositiveCase {
 
 const POSITIVES: PositiveCase[] = [
   { label: 'GLB', file: 'box.glb', buf: W.glb(mm), expect: 'gltf', strong: true },
-  { label: 'glTF JSON', file: 'box.gltf', buf: W.gltfSeparate(mm).gltf, expect: 'gltf', strong: true },
+  {
+    label: 'glTF JSON',
+    file: 'box.gltf',
+    buf: W.gltfSeparate(mm).gltf,
+    expect: 'gltf',
+    strong: true,
+  },
   { label: 'PLY ascii', file: 'box.ply', buf: W.plyAscii(mm), expect: 'ply', strong: true },
-  { label: 'PLY binary LE', file: 'box.ply', buf: W.plyBinary(mm, true), expect: 'ply', strong: true },
-  { label: 'PLY binary BE', file: 'box.ply', buf: W.plyBinary(mm, false), expect: 'ply', strong: true },
+  {
+    label: 'PLY binary LE',
+    file: 'box.ply',
+    buf: W.plyBinary(mm, true),
+    expect: 'ply',
+    strong: true,
+  },
+  {
+    label: 'PLY binary BE',
+    file: 'box.ply',
+    buf: W.plyBinary(mm, false),
+    expect: 'ply',
+    strong: true,
+  },
   { label: 'STL binary', file: 'box.stl', buf: W.stlBinary(mm), expect: 'stl', strong: true },
   { label: 'STL ascii', file: 'box.stl', buf: W.stlAscii(mm), expect: 'stl', strong: false },
   { label: 'OBJ', file: 'box.obj', buf: W.objMtl(mm).obj, expect: 'obj', strong: false },
@@ -93,7 +111,13 @@ const POSITIVES: PositiveCase[] = [
   { label: 'USDC', file: 'box.usdc', buf: W.usdcMagicOnly(), expect: 'usd', strong: true },
   { label: 'USDZ', file: 'box.usdz', buf: W.usdz(0.001, 'Y'), expect: 'usd', strong: true },
   { label: '3MF', file: 'box.3mf', buf: W.threemf('millimeter'), expect: '3mf', strong: true },
-  { label: 'FBX binary', file: 'box.fbx', buf: W.fbxBinaryMagicOnly(), expect: 'fbx', strong: true },
+  {
+    label: 'FBX binary',
+    file: 'box.fbx',
+    buf: W.fbxBinaryMagicOnly(),
+    expect: 'fbx',
+    strong: true,
+  },
 ];
 
 describe('positive detection', () => {
@@ -111,7 +135,8 @@ describe('positive detection', () => {
   );
 
   it('identifies STEP from a real fixture header', () => {
-    const step = 'ISO-10303-21;\nHEADER;\nFILE_DESCRIPTION((\'\'),\'2;1\');\nENDSEC;\nDATA;\nENDSEC;\nEND-ISO-10303-21;\n';
+    const step =
+      "ISO-10303-21;\nHEADER;\nFILE_DESCRIPTION((''),'2;1');\nENDSEC;\nDATA;\nENDSEC;\nEND-ISO-10303-21;\n";
     expect(best('part.step', bytes(step))).toBe('step');
     expect(best('renamed.dat', bytes(step))).toBe('step'); // strong: magic beats the name
   });
@@ -119,7 +144,9 @@ describe('positive detection', () => {
   it('identifies IGES by the column-73 section letter', () => {
     const line = (body: string, sec: string, n: number) =>
       body.padEnd(72, ' ') + sec + String(n).padStart(7, ' ');
-    const iges = [line('preview test', 'S', 1), line('1H,,1H;', 'G', 1), line('', 'D', 1)].join('\n');
+    const iges = [line('preview test', 'S', 1), line('1H,,1H;', 'G', 1), line('', 'D', 1)].join(
+      '\n',
+    );
     expect(best('part.igs', bytes(iges))).toBe('iges');
   });
 

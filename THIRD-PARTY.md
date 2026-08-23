@@ -30,14 +30,14 @@ deployment.
 
 ## MIT dependencies
 
-| Component | Used for |
-| --- | --- |
-| [three.js](https://github.com/mrdoob/three.js) | rendering, and the STL, PLY, glTF and USD loaders |
-| [@react-three/fiber](https://github.com/pmndrs/react-three-fiber) | the React renderer for three |
-| [@react-three/drei](https://github.com/pmndrs/drei) | `CameraControls`, `Line`, `Html`, the orientation gizmo |
-| [camera-controls](https://github.com/yomotsu/camera-controls) | the underlying camera implementation |
-| [three-mesh-bvh](https://github.com/gkjohnson/three-mesh-bvh) | accelerated picking for the measurement tool |
-| [React](https://github.com/facebook/react) | the application framework |
+| Component                                                         | Used for                                                |
+| ----------------------------------------------------------------- | ------------------------------------------------------- |
+| [three.js](https://github.com/mrdoob/three.js)                    | rendering, and the STL, PLY, glTF and USD loaders       |
+| [@react-three/fiber](https://github.com/pmndrs/react-three-fiber) | the React renderer for three                            |
+| [@react-three/drei](https://github.com/pmndrs/drei)               | `CameraControls`, `Line`, `Html`, the orientation gizmo |
+| [camera-controls](https://github.com/yomotsu/camera-controls)     | the underlying camera implementation                    |
+| [three-mesh-bvh](https://github.com/gkjohnson/three-mesh-bvh)     | accelerated picking for the measurement tool            |
+| [React](https://github.com/facebook/react)                        | the application framework                               |
 
 Decoder binaries staged into `public/vendor/` — Draco and Basis/KTX2 — are redistributed
 unmodified from the three.js package and carry Apache-2.0 licences, recorded in the READMEs

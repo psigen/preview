@@ -12,7 +12,7 @@ npm ci               # installs; postinstall stages decoders into public/vendor
 npm run dev          # vite dev server on 5173
 npm test             # vitest: the 'lib' (node) and 'dom' (jsdom) projects — the CI gate
 npm run test:browser # optional tier: DRACO, KTX2, real workers, WebGL
-npm run lint         # eslint + scripts/check-no-network.mjs
+npm run lint         # eslint + scripts/check-no-network.js
 npm run verify:viewer # end-to-end camera checks in headless Chrome (needs dist/)
 npm run build        # prebuild --check, then tsc && vite build
 npm run preview      # serve dist/ on 4173
@@ -30,8 +30,8 @@ Findings that established several of them are recorded in [docs/SPIKES.md](docs/
 **No network at runtime.** The app must work fully offline after load. That bans drei's `Text`,
 `Text3D`, `Environment`, `useEnvironment` and `Loader`, all of which fetch fonts or HDRIs from a
 CDN. Use `<Html>` for in-scene text and `RoomEnvironment` + `PMREMGenerator` for lighting. This
-is enforced by `no-restricted-imports` in [eslint.config.js](eslint.config.js) *and* by
-[scripts/check-no-network.mjs](scripts/check-no-network.mjs); prose alone erodes.
+is enforced by `no-restricted-imports` in [eslint.config.js](eslint.config.js) _and_ by
+[scripts/check-no-network.js](scripts/check-no-network.js); prose alone erodes.
 
 **No COOP/COEP, ever.** GitHub Pages cannot send those headers, so there is no
 `SharedArrayBuffer` and no threaded wasm. Every decoder must be single-threaded.
@@ -61,7 +61,7 @@ queried by the other.
 **`public/vendor/` is generated and gitignored.** `DRACOLoader.setDecoderPath()` and
 `KTX2Loader.setTranscoderPath()` concatenate filenames at runtime, so they cannot take
 content-hashed asset URLs — a stable unhashed directory is a hard requirement. `prebuild` runs
-`copy-wasm.mjs --check` so a `npm ci --ignore-scripts` CI can never deploy a broken vendor tree.
+`copy-wasm.js --check` so a `npm ci --ignore-scripts` CI can never deploy a broken vendor tree.
 
 **LGPL:** `occt-import-js` is LGPL-2.1 and bundles Open CASCADE. Its `.wasm` must stay a
 separate, unmodified, replaceable file, and both licence texts ship alongside it. Never
@@ -73,11 +73,26 @@ base64-inline it. `VITE_ENABLE_CAD=0` produces a build with no LGPL artifacts at
 no DOM, no I/O, fully synchronous — with its own dedicated suite in `detect.test.ts`. It shares
 only `FormatId` with the loader registry. Two subtleties worth knowing:
 
-- Sniff-first, extension as tie-breaker. `detectFormat` returns an *ordered* candidate list and
+- Sniff-first, extension as tie-breaker. `detectFormat` returns an _ordered_ candidate list and
   the loader falls through on a parse throw.
 - `BINARY_SNIFF_BYTES` in `probe.ts` must stay `>= 84`. A binary STL's triangle-count field at
   offsets 80..83 always contains a NUL, which is what stops its literal `solid ...` header from
   being read as an ASCII STL. There is a regression test pinning this.
+
+## Formatting
+
+Prettier owns it. `npm run format` writes, `npm run lint` checks, and CI fails on drift —
+which exists because formatting one file in isolation once left it double-quoted against a
+single-quoted codebase.
+
+[prettier.config.js](prettier.config.js) overrides exactly two defaults, each with the reason
+recorded beside it. Do not add a third without one. Where a table's layout carries meaning —
+the box topology, the unit lookup — a `// prettier-ignore` pins it, with a comment saying
+what the shape encodes. Note that comment must be exactly `// prettier-ignore`; trailing text
+silently disables it.
+
+Scripts and configs are plain `.js`, not `.mjs`: `package.json` sets `"type": "module"`, so
+every file in the package is already ESM and the extension would add nothing.
 
 ## Adding a format
 

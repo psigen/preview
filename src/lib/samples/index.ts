@@ -67,8 +67,14 @@ function glb(ext: Extents): ArrayBuffer {
     nodes: [{ mesh: 0, name: 'box' }],
     meshes: [{ name: 'box', primitives: [{ attributes: { POSITION: 0, NORMAL: 1 }, mode: 4 }] }],
     accessors: [
-      { bufferView: 0, componentType: 5126, count: 36, type: 'VEC3',
-        min: [0, 0, 0], max: [ext.x, ext.y, ext.z] },
+      {
+        bufferView: 0,
+        componentType: 5126,
+        count: 36,
+        type: 'VEC3',
+        min: [0, 0, 0],
+        max: [ext.x, ext.y, ext.z],
+      },
       { bufferView: 1, componentType: 5126, count: 36, type: 'VEC3' },
     ],
     bufferViews: [
@@ -112,7 +118,9 @@ function glb(ext: Extents): ArrayBuffer {
 function usda(metersPerUnit: number, upAxis: 'Y' | 'Z'): ArrayBuffer {
   const s = 1e-3 / metersPerUnit;
   const e: Extents = { x: BOX_MM.x * s, y: BOX_MM.y * s, z: BOX_MM.z * s };
-  const pts = corners(e).map((v) => `(${v[0]}, ${v[1]}, ${v[2]})`).join(', ');
+  const pts = corners(e)
+    .map((v) => `(${v[0]}, ${v[1]}, ${v[2]})`)
+    .join(', ');
   const bytes = enc.encode(`#usda 1.0
 (
     defaultPrim = "box"
@@ -186,7 +194,7 @@ const scaled = (factor: number) => ({
  *
  * Because the camera derives every constant from the bounding-sphere radius and never
  * rescales the model, the three STL samples must frame IDENTICALLY — which is what
- * scripts/verify-viewer.mjs asserts, pixel for pixel. The PLY is not pixel-comparable with
+ * scripts/verify-viewer.js asserts, pixel for pixel. The PLY is not pixel-comparable with
  * them: it has no vertex normals, so buildScene derives smoothed ones at the shared corners
  * of an indexed box, where STL carries flat per-facet normals.
  */

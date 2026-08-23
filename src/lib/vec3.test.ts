@@ -1,6 +1,15 @@
 import { describe, expect, it } from 'vitest';
 import {
-  add, angleBetweenDeg, distance, dot, isFiniteVec, length, midpoint, normalize, scale, sub,
+  add,
+  angleBetweenDeg,
+  distance,
+  dot,
+  isFiniteVec,
+  length,
+  midpoint,
+  normalize,
+  scale,
+  sub,
   type Vec3,
 } from './vec3';
 

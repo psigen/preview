@@ -41,9 +41,10 @@ export function readStageInfo(root: Object3D): UsdStageInfo {
  * USDA only — a crate file is binary, and USDZ wraps either. The composer path is shared by
  * all three, so proving it on USDA is what covers the rest.
  */
-export function usdaHeaderMetadata(
-  text: string,
-): { metersPerUnit: number | null; upAxis: 'Y' | 'Z' | null } {
+export function usdaHeaderMetadata(text: string): {
+  metersPerUnit: number | null;
+  upAxis: 'Y' | 'Z' | null;
+} {
   const head = text.slice(0, 4096);
   const mpu = /metersPerUnit\s*=\s*([\d.eE+-]+)/.exec(head);
   const axis = /upAxis\s*=\s*"([YZ])"/.exec(head);

@@ -162,7 +162,11 @@ function triangleOf(hit: Intersection): [Vec3, Vec3, Vec3] | null {
  * Points have no area, so raycasting them uses a world-space radius. Scaling it by the
  * current view distance keeps that radius a roughly constant number of pixels.
  */
-function pointThreshold(camera: { position: Vector3 }, root: Object3D, viewportHeight: number): number {
+function pointThreshold(
+  camera: { position: Vector3 },
+  root: Object3D,
+  viewportHeight: number,
+): number {
   root.getWorldPosition(scratch);
   const distance = camera.position.distanceTo(scratch) || 1;
   return (distance * LIMITS.snapPx) / Math.max(viewportHeight, 1);

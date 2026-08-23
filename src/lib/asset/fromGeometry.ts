@@ -15,7 +15,10 @@ import type { TranscodeCounts } from '../registry/types';
 
 type AnyAttribute = BufferAttribute | InterleavedBufferAttribute;
 
-function asFloat32(attribute: AnyAttribute | undefined, itemSize: number): Float32Array | undefined {
+function asFloat32(
+  attribute: AnyAttribute | undefined,
+  itemSize: number,
+): Float32Array | undefined {
   if (!attribute) return undefined;
   if (attribute.itemSize !== itemSize) return undefined;
 
@@ -24,7 +27,8 @@ function asFloat32(attribute: AnyAttribute | undefined, itemSize: number): Float
   // shared buffer — every other attribute's values included — so taking it verbatim would
   // hand back sheared geometry that renders as garbage rather than failing. glTF produces
   // interleaved accessors routinely, so this is not a theoretical case.
-  const interleaved = (attribute as InterleavedBufferAttribute).isInterleavedBufferAttribute === true;
+  const interleaved =
+    (attribute as InterleavedBufferAttribute).isInterleavedBufferAttribute === true;
   if (!interleaved && !attribute.normalized) {
     const array = (attribute as BufferAttribute).array;
     if (array instanceof Float32Array) return array;

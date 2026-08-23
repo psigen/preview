@@ -27,7 +27,10 @@ interface Harness {
 let container: HTMLDivElement;
 let root: Root;
 
-function render(onFiles: (f: DroppedFile[], truncated: boolean) => void, disabled = false): Harness {
+function render(
+  onFiles: (f: DroppedFile[], truncated: boolean) => void,
+  disabled = false,
+): Harness {
   let latest = false;
   function Probe() {
     latest = useWindowDrop({ onFiles, disabled });

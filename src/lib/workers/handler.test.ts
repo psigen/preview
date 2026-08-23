@@ -55,7 +55,11 @@ describe('handleRequest', () => {
 
   it('forwards progress before the result', async () => {
     const { messages, post } = recorder();
-    await handleRequest(parse({ format: 'ply', fileName: 'box.ply', bytes: plyAscii(mm) }), post, createHandlerState());
+    await handleRequest(
+      parse({ format: 'ply', fileName: 'box.ply', bytes: plyAscii(mm) }),
+      post,
+      createHandlerState(),
+    );
     const kinds = messages.map((m) => m.type);
     expect(kinds).toContain('progress');
     expect(kinds.indexOf('progress')).toBeLessThan(kinds.indexOf('result'));
@@ -114,9 +118,13 @@ describe('handleRequest', () => {
     const { createRequire } = await import('node:module');
     const require_ = createRequire(import.meta.url);
     const raw = await readFile(require_.resolve('occt-import-js/dist/occt-import-js.wasm'));
-    const wasmBinary = raw.buffer.slice(raw.byteOffset, raw.byteOffset + raw.byteLength) as ArrayBuffer;
+    const wasmBinary = raw.buffer.slice(
+      raw.byteOffset,
+      raw.byteOffset + raw.byteLength,
+    ) as ArrayBuffer;
     const step = await readFile(new URL('../../../test/fixtures/box-mm.step', import.meta.url));
-    const stepBytes = () => step.buffer.slice(step.byteOffset, step.byteOffset + step.byteLength) as ArrayBuffer;
+    const stepBytes = () =>
+      step.buffer.slice(step.byteOffset, step.byteOffset + step.byteLength) as ArrayBuffer;
 
     const { messages, post } = recorder();
     const state = createHandlerState();
@@ -155,7 +163,11 @@ describe('handleRequest', () => {
     const state = createHandlerState();
     await Promise.all([
       handleRequest(parse({ id: 7, bytes: stlAscii(mm) }), post, state),
-      handleRequest(parse({ id: 9, format: 'ply', fileName: 'b.ply', bytes: plyAscii(mm) }), post, state),
+      handleRequest(
+        parse({ id: 9, format: 'ply', fileName: 'b.ply', bytes: plyAscii(mm) }),
+        post,
+        state,
+      ),
     ]);
     const results = messages.filter((m) => m.type === 'result');
     expect(results.map((m) => m.id).sort()).toEqual([7, 9]);

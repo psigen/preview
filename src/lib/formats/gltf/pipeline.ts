@@ -58,7 +58,13 @@ export const gltfPipeline: ScenePipeline = {
     const json = peekJson(input.primary.bytes);
     const required = (json?.extensionsRequired as string[] | undefined) ?? [];
     if (required.includes('KHR_draco_mesh_compression') && !decoders.draco) {
-      warnings.push(warn('unsupported-feature', 'This file uses Draco compression, which is unavailable here.', 'error'));
+      warnings.push(
+        warn(
+          'unsupported-feature',
+          'This file uses Draco compression, which is unavailable here.',
+          'error',
+        ),
+      );
     }
     if (required.includes('KHR_texture_basisu') && !decoders.ktx2) {
       warnings.push(
@@ -72,8 +78,14 @@ export const gltfPipeline: ScenePipeline = {
       );
     }
     for (const ext of required) {
-      if (!/^KHR_(draco_mesh_compression|texture_basisu|mesh_quantization|materials_|texture_transform|lights_)/.test(ext)) {
-        warnings.push(warn('unsupported-feature', `This file requires the ${ext} extension.`, 'warning'));
+      if (
+        !/^KHR_(draco_mesh_compression|texture_basisu|mesh_quantization|materials_|texture_transform|lights_)/.test(
+          ext,
+        )
+      ) {
+        warnings.push(
+          warn('unsupported-feature', `This file requires the ${ext} extension.`, 'warning'),
+        );
       }
     }
 
@@ -82,7 +94,11 @@ export const gltfPipeline: ScenePipeline = {
 
     if (gltf.animations.length > 0) {
       warnings.push(
-        warn('unsupported-feature', `${gltf.animations.length} animation(s) found; playback is not supported yet.`, 'info'),
+        warn(
+          'unsupported-feature',
+          `${gltf.animations.length} animation(s) found; playback is not supported yet.`,
+          'info',
+        ),
       );
     }
 

@@ -2,7 +2,12 @@ import { describe, expect, it } from 'vitest';
 import type { Mesh, MeshPhongMaterial } from 'three';
 import { extentsIn } from '../../../../test/gen/box';
 import { objMtl } from '../../../../test/gen/writers';
-import { DEFAULT_QUALITY, type AssetFile, type LoadContext, type LoadInput } from '../../registry/types';
+import {
+  DEFAULT_QUALITY,
+  type AssetFile,
+  type LoadContext,
+  type LoadInput,
+} from '../../registry/types';
 import { objPipeline } from './pipeline';
 
 const mm = extentsIn('millimeter');
@@ -23,7 +28,9 @@ function input(objBytes: ArrayBuffer, companions: [string, ArrayBuffer][] = []):
   };
 }
 
-function firstMaterial(object: { traverse(cb: (o: unknown) => void): void }): MeshPhongMaterial | null {
+function firstMaterial(object: {
+  traverse(cb: (o: unknown) => void): void;
+}): MeshPhongMaterial | null {
   let found: MeshPhongMaterial | null = null;
   object.traverse((o) => {
     const mesh = o as Mesh & { isMesh?: boolean };

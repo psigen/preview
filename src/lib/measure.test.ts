@@ -14,7 +14,11 @@ import {
 } from './measure';
 import type { Vec3 } from './vec3';
 
-const pt = (p: Vec3, snap: MeasurePoint['snap'] = 'surface'): MeasurePoint => ({ p, n: null, snap });
+const pt = (p: Vec3, snap: MeasurePoint['snap'] = 'surface'): MeasurePoint => ({
+  p,
+  n: null,
+  snap,
+});
 const on = (over: Partial<MeasureState> = {}): MeasureState => ({
   ...initialMeasureState,
   mode: 'point-to-point',
@@ -67,7 +71,12 @@ describe('measureReducer', () => {
 
   it('never reuses an id, even after deleting', () => {
     let s = on();
-    for (const p of [[0, 0, 0], [1, 0, 0], [0, 1, 0], [0, 0, 1]] as Vec3[]) {
+    for (const p of [
+      [0, 0, 0],
+      [1, 0, 0],
+      [0, 1, 0],
+      [0, 0, 1],
+    ] as Vec3[]) {
       s = measureReducer(s, { type: 'pick', point: pt(p) });
     }
     const [first, second] = s.items;
@@ -92,7 +101,12 @@ describe('measureReducer', () => {
 
   it('leaves the selection alone when a different measurement is deleted', () => {
     let s = on();
-    for (const p of [[0, 0, 0], [1, 0, 0], [0, 1, 0], [0, 0, 1]] as Vec3[]) {
+    for (const p of [
+      [0, 0, 0],
+      [1, 0, 0],
+      [0, 1, 0],
+      [0, 0, 1],
+    ] as Vec3[]) {
       s = measureReducer(s, { type: 'pick', point: pt(p) });
     }
     const keep = s.selectedId;

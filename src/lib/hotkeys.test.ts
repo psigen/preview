@@ -5,8 +5,13 @@ const press = (key: string, over: Record<string, unknown> = {}) => ({ key, ...ov
 
 describe('resolveHotkey', () => {
   it.each([
-    ['1', 'front'], ['2', 'back'], ['3', 'right'], ['4', 'left'],
-    ['5', 'top'], ['6', 'bottom'], ['7', 'iso'],
+    ['1', 'front'],
+    ['2', 'back'],
+    ['3', 'right'],
+    ['4', 'left'],
+    ['5', 'top'],
+    ['6', 'bottom'],
+    ['7', 'iso'],
   ])('%s selects the %s view', (key, view) => {
     expect(resolveHotkey(press(key), null)).toEqual({ kind: 'view', view });
   });

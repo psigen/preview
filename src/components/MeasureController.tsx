@@ -24,7 +24,13 @@ interface Props {
  * would re-render the whole scene graph a hundred times a second to move one sphere.
  */
 export function MeasureController({
-  root, state, dispatch, metersPerUnit, unit, system, onBvhStatus,
+  root,
+  state,
+  dispatch,
+  metersPerUnit,
+  unit,
+  system,
+  onBvhStatus,
 }: Props) {
   const hoverRef = useRef<MeasurePoint | null>(null);
   const measuring = state.mode === 'point-to-point';

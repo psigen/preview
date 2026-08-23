@@ -58,7 +58,10 @@ export async function handleRequest(
     if (state.cancelled.has(id)) controller.abort();
 
     const companionFiles = new Map<string, AssetFile>(
-      Object.entries(companions).map(([path, buffer]) => [path, { name: path, path, bytes: buffer }]),
+      Object.entries(companions).map(([path, buffer]) => [
+        path,
+        { name: path, path, bytes: buffer },
+      ]),
     );
     const input: LoadInput = {
       primary: { name: fileName, path: fileName, bytes },

@@ -18,7 +18,9 @@ export function primeOcct(): Promise<void> {
     primed = (async () => {
       const path = require_.resolve('occt-import-js/dist/occt-import-js.wasm');
       const bytes = await readFile(path);
-      await loadOcct(bytes.buffer.slice(bytes.byteOffset, bytes.byteOffset + bytes.byteLength) as ArrayBuffer);
+      await loadOcct(
+        bytes.buffer.slice(bytes.byteOffset, bytes.byteOffset + bytes.byteLength) as ArrayBuffer,
+      );
     })();
   }
   return primed;

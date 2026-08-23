@@ -35,8 +35,8 @@ export function EmptyState({ onFiles, onSample, disabled = false }: Props) {
       <section className="card empty-state">
         <h1>Open a 3D model</h1>
         <p className="hint">
-          Drop a file anywhere on this page, or choose one below. Everything is read in your
-          browser — nothing is uploaded.
+          Drop a file anywhere on this page, or choose one below. Everything is read in your browser
+          — nothing is uploaded.
         </p>
 
         <div className="empty-actions">

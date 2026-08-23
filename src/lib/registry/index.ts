@@ -15,7 +15,7 @@ import type { FormatDescriptor } from './types';
  * module sits behind the descriptor's dynamic `pipeline()` import.
  */
 /**
- * Matches the gate in scripts/copy-wasm.mjs. STEP, IGES and BREP are the only formats behind
+ * Matches the gate in scripts/copy-wasm.js. STEP, IGES and BREP are the only formats behind
  * it, because occt-import-js is the only LGPL dependency; with the flag off, neither the
  * descriptors nor the 7.7 MB of vendored wasm are part of the build.
  */

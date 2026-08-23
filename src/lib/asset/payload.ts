@@ -136,7 +136,10 @@ function buildMaterial(spec: MaterialPayload, topology: Topology): Material {
     const m = new PointsMaterial({ size: 3, sizeAttenuation: false });
     if (color) m.color = color;
     if (spec.vertexColors) m.vertexColors = true;
-    if (spec.opacity !== undefined) { m.opacity = spec.opacity; m.transparent = transparent; }
+    if (spec.opacity !== undefined) {
+      m.opacity = spec.opacity;
+      m.transparent = transparent;
+    }
     m.name = spec.name ?? '';
     return m;
   }
@@ -144,7 +147,10 @@ function buildMaterial(spec: MaterialPayload, topology: Topology): Material {
     const m = new LineBasicMaterial();
     if (color) m.color = color;
     if (spec.vertexColors) m.vertexColors = true;
-    if (spec.opacity !== undefined) { m.opacity = spec.opacity; m.transparent = transparent; }
+    if (spec.opacity !== undefined) {
+      m.opacity = spec.opacity;
+      m.transparent = transparent;
+    }
     m.name = spec.name ?? '';
     return m;
   }
@@ -156,7 +162,10 @@ function buildMaterial(spec: MaterialPayload, topology: Topology): Material {
   if (spec.vertexColors) m.vertexColors = true;
   if (spec.flatShading) m.flatShading = true;
   if (spec.doubleSided) m.side = DoubleSide;
-  if (spec.opacity !== undefined) { m.opacity = spec.opacity; m.transparent = transparent; }
+  if (spec.opacity !== undefined) {
+    m.opacity = spec.opacity;
+    m.transparent = transparent;
+  }
   m.name = spec.name ?? '';
   return m;
 }
@@ -210,8 +219,10 @@ export function buildScene(payload: ScenePayload): Object3D {
 
   const buildRenderable = (mesh: MeshPayload): Object3D => {
     const geometry = buildGeometry(mesh);
-    if (mesh.topology === 'points') return new Points(geometry, materialFor(mesh.materialIndex ?? 0, 'points'));
-    if (mesh.topology === 'lines') return new LineSegments(geometry, materialFor(mesh.materialIndex ?? 0, 'lines'));
+    if (mesh.topology === 'points')
+      return new Points(geometry, materialFor(mesh.materialIndex ?? 0, 'points'));
+    if (mesh.topology === 'lines')
+      return new LineSegments(geometry, materialFor(mesh.materialIndex ?? 0, 'lines'));
 
     // A grouped geometry needs a material array indexed the same way as its groups.
     if (mesh.groups?.length) {

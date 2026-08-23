@@ -35,7 +35,9 @@ describe('convertOcctResult', () => {
     const withNormals = ok({
       meshes: [mesh({ attributes: { ...tri(2), normal: { array: Array(18).fill(0) } } })],
     });
-    expect(convertOcctResult(withNormals, 'p.step').meshes[0]!.normals).toBeInstanceOf(Float32Array);
+    expect(convertOcctResult(withNormals, 'p.step').meshes[0]!.normals).toBeInstanceOf(
+      Float32Array,
+    );
   });
 
   it('rejects a failed read', () => {
@@ -56,7 +58,9 @@ describe('convertOcctResult', () => {
 
   it('drops a degenerate face without failing the whole file', () => {
     const scene = convertOcctResult(
-      ok({ meshes: [mesh(), mesh({ attributes: { position: { array: [] } }, index: { array: [] } })] }),
+      ok({
+        meshes: [mesh(), mesh({ attributes: { position: { array: [] } }, index: { array: [] } })],
+      }),
       'p.step',
     );
     expect(scene.meshes).toHaveLength(1);

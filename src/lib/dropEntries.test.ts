@@ -81,7 +81,9 @@ describe('readEntries', () => {
 
   it('stops and reports truncation past the depth limit', async () => {
     // a/b/c/deep.stl with maxDepth 2
-    const deep = dirEntry('/a', [dirEntry('/a/b', [dirEntry('/a/b/c', [fileEntry('/a/b/c/deep.stl')])])]);
+    const deep = dirEntry('/a', [
+      dirEntry('/a/b', [dirEntry('/a/b/c', [fileEntry('/a/b/c/deep.stl')])]),
+    ]);
     const { files, truncated } = await readEntries([deep], { maxFiles: 100, maxDepth: 2 });
     expect(files).toHaveLength(0);
     expect(truncated).toBe(true);
@@ -101,7 +103,10 @@ describe('readEntries', () => {
 
   it('tolerates a directory entry with no reader', async () => {
     const odd: FileSystemEntryLike = {
-      isFile: false, isDirectory: true, fullPath: '/x', name: 'x',
+      isFile: false,
+      isDirectory: true,
+      fullPath: '/x',
+      name: 'x',
     };
     await expect(readEntries([odd])).resolves.toEqual({ files: [], truncated: false });
   });

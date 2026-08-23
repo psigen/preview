@@ -35,7 +35,11 @@ export const usdPipeline: ScenePipeline = {
     const animations = (root as Group & { animations?: never[] }).animations ?? [];
     if (animations.length > 0) {
       warnings.push(
-        warn('unsupported-feature', `${animations.length} animation(s) found; playback is not supported yet.`, 'info'),
+        warn(
+          'unsupported-feature',
+          `${animations.length} animation(s) found; playback is not supported yet.`,
+          'info',
+        ),
       );
     }
 

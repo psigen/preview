@@ -1,0 +1,13 @@
+# Build output and installed packages.
+dist
+node_modules
+coverage
+
+# Third-party decoder binaries, staged verbatim from node_modules. Reformatting a vendored
+# artifact would also break the LGPL claim that it ships unmodified.
+public/vendor
+
+# Generated lockfiles. Prettier would happily reformat these and then fight the tool that
+# writes them.
+package-lock.json
+flake.lock

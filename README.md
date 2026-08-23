@@ -20,20 +20,20 @@ Early. The architecture is being built stage by stage on top of the assumptions 
 [docs/SPIKES.md](docs/SPIKES.md). What exists today is the scaffold, the wasm staging pipeline
 and the format-detection library; the viewer, loader plugins and ruler are still to land.
 
-| Area | State |
-| --- | --- |
-| Toolchain, CI, GitHub Pages deploy, decoder staging | done |
-| Format detection (`src/lib/detect/`) | done |
-| Units, camera and budget maths (`src/lib/`) | done |
-| Asset contract: payload, orientation, stats, bounds, disposal | done |
-| Viewer: camera, standard views, lighting | done |
-| Format registry and bundled samples | done |
-| **USD, glTF/GLB, STL, PLY** | done |
-| Drag-and-drop, folder drop, in-place replacement | done |
-| **Measurement ruler** | done |
-| **STEP and IGES** (the CAD stretch goal) | done |
-| **OBJ + MTL**, and sidecar resolution for multi-file drops | done |
-| 3MF, FBX | not yet |
+| Area                                                          | State   |
+| ------------------------------------------------------------- | ------- |
+| Toolchain, CI, GitHub Pages deploy, decoder staging           | done    |
+| Format detection (`src/lib/detect/`)                          | done    |
+| Units, camera and budget maths (`src/lib/`)                   | done    |
+| Asset contract: payload, orientation, stats, bounds, disposal | done    |
+| Viewer: camera, standard views, lighting                      | done    |
+| Format registry and bundled samples                           | done    |
+| **USD, glTF/GLB, STL, PLY**                                   | done    |
+| Drag-and-drop, folder drop, in-place replacement              | done    |
+| **Measurement ruler**                                         | done    |
+| **STEP and IGES** (the CAD stretch goal)                      | done    |
+| **OBJ + MTL**, and sidecar resolution for multi-file drops    | done    |
+| 3MF, FBX                                                      | not yet |
 
 581 unit tests pass headless across a Node tier and a jsdom tier, plus a
 53-check end-to-end verification (`npm run verify:viewer`) that drives the real
@@ -70,23 +70,24 @@ Running the checks:
 ```bash
 npm test             # vitest, the CI gate — every format's parse path, headless
 npm run test:browser # optional tier: Draco, KTX2, real workers, WebGL
-npm run lint         # eslint + the no-network guard
+npm run format       # prettier --write .
+npm run lint         # eslint + prettier --check + the no-network guard
 npm run verify:viewer # end-to-end camera checks in headless Chrome (needs a built dist/)
 ```
 
 ## Supported formats
 
-| Format | Extensions | Loader | Units |
-| --- | --- | --- | --- |
-| OpenUSD | `.usd` `.usda` `.usdc` `.usdz` | three `USDLoader` — **working** | declared (`metersPerUnit`) |
-| glTF 2.0 | `.gltf` `.glb` | three `GLTFLoader` + Draco / KTX2 / meshopt — **working** | metres, per spec |
-| STEP | `.step` `.stp` | `occt-import-js` (wasm) — **working** | declared, converted by OCCT |
-| IGES | `.iges` `.igs` | `occt-import-js` (wasm) — **working** | declared, converted by OCCT |
-| 3MF | `.3mf` | three `3MFLoader` | declared (`unit` attribute) |
-| STL | `.stl` | three `STLLoader` — **working** | none — abstract |
-| PLY | `.ply` | three `PLYLoader` — **working** | none — abstract |
-| OBJ | `.obj` (+ `.mtl`) | three `OBJLoader` + `MTLLoader` — **working** | none — abstract |
-| FBX | `.fbx` | three `FBXLoader` | none — abstract |
+| Format   | Extensions                     | Loader                                                    | Units                       |
+| -------- | ------------------------------ | --------------------------------------------------------- | --------------------------- |
+| OpenUSD  | `.usd` `.usda` `.usdc` `.usdz` | three `USDLoader` — **working**                           | declared (`metersPerUnit`)  |
+| glTF 2.0 | `.gltf` `.glb`                 | three `GLTFLoader` + Draco / KTX2 / meshopt — **working** | metres, per spec            |
+| STEP     | `.step` `.stp`                 | `occt-import-js` (wasm) — **working**                     | declared, converted by OCCT |
+| IGES     | `.iges` `.igs`                 | `occt-import-js` (wasm) — **working**                     | declared, converted by OCCT |
+| 3MF      | `.3mf`                         | three `3MFLoader`                                         | declared (`unit` attribute) |
+| STL      | `.stl`                         | three `STLLoader` — **working**                           | none — abstract             |
+| PLY      | `.ply`                         | three `PLYLoader` — **working**                           | none — abstract             |
+| OBJ      | `.obj` (+ `.mtl`)              | three `OBJLoader` + `MTLLoader` — **working**             | none — abstract             |
+| FBX      | `.fbx`                         | three `FBXLoader`                                         | none — abstract             |
 
 Formats are identified by **magic bytes first**, with the filename only as a tie-breaker, so a
 renamed download still opens. Adding a format is one entry in the registry plus a plugin
@@ -94,15 +95,15 @@ directory — see [CLAUDE.md](CLAUDE.md).
 
 ## How it works
 
-| Concern | Approach |
-| --- | --- |
-| Mesh parsing | three.js loaders, dynamically imported so nothing unused is in the bundle |
-| CAD tessellation | `occt-import-js` (Open CASCADE → WebAssembly) |
-| Off-thread parsing | STL, PLY, STEP and IGES run in a Web Worker; the rest need the DOM |
-| Sidecar files | An in-memory companion map hooked into `LoadingManager.setURLModifier` |
-| Rendering | react-three-fiber + three.js, `frameloop="demand"` so an idle viewer costs nothing |
-| Lighting | Procedural `RoomEnvironment` + `PMREMGenerator` — no HDRI download |
-| Picking | A manual raycaster with a `three-mesh-bvh` acceleration structure |
+| Concern            | Approach                                                                           |
+| ------------------ | ---------------------------------------------------------------------------------- |
+| Mesh parsing       | three.js loaders, dynamically imported so nothing unused is in the bundle          |
+| CAD tessellation   | `occt-import-js` (Open CASCADE → WebAssembly)                                      |
+| Off-thread parsing | STL, PLY, STEP and IGES run in a Web Worker; the rest need the DOM                 |
+| Sidecar files      | An in-memory companion map hooked into `LoadingManager.setURLModifier`             |
+| Rendering          | react-three-fiber + three.js, `frameloop="demand"` so an idle viewer costs nothing |
+| Lighting           | Procedural `RoomEnvironment` + `PMREMGenerator` — no HDRI download                 |
+| Picking            | A manual raycaster with a `three-mesh-bvh` acceleration structure                  |
 
 Heavy formats go through a **transcode phase**: bytes in, transferable typed arrays out. That
 runs in a worker and keeps the UI responsive on a large STL or a slow STEP tessellation. Formats
@@ -113,10 +114,10 @@ that need the DOM for textures — glTF, USD, OBJ, 3MF, FBX — load on the main
 The ruler reports a real length whenever the file says what its numbers mean, and refuses to
 invent one when it doesn't:
 
-| Source says | Ruler shows |
-| --- | --- |
-| USD `metersPerUnit`, glTF metres, a STEP/IGES unit, a 3MF `unit` | `124.53 mm` — real, converted |
-| Nothing (STL, PLY, OBJ, FBX) | `37.417 u` — abstract, with no assumed scale |
+| Source says                                                      | Ruler shows                                  |
+| ---------------------------------------------------------------- | -------------------------------------------- |
+| USD `metersPerUnit`, glTF metres, a STEP/IGES unit, a 3MF `unit` | `124.53 mm` — real, converted                |
+| Nothing (STL, PLY, OBJ, FBX)                                     | `37.417 u` — abstract, with no assumed scale |
 
 Verified end to end: the same two clicks on a USD stage authored in millimetres report
 `6.631 mm`, and on an STL report `6.8052 u`.
@@ -133,8 +134,8 @@ whichever way the model is oriented.
 
 Once loaded, the app makes no requests. Fonts are system fonts, lighting is procedural, and every
 decoder is served from the same origin. This is enforced mechanically — an eslint rule bans the
-drei APIs that reach for a CDN, and `scripts/check-no-network.mjs
-scripts/verify-viewer.mjs   # end-to-end camera checks driven through CDP` fails the build on a stray URL
+drei APIs that reach for a CDN, and `scripts/check-no-network.js
+scripts/verify-viewer.js   # end-to-end camera checks driven through CDP` fails the build on a stray URL
 in `src/`.
 
 The Open CASCADE wasm is 7.6 MB and lives in `public/vendor/`, so it is fetched **only** the first
@@ -197,9 +198,9 @@ src/
   App.tsx, main.tsx    # app shell and hash routing
   styles.css           # one global stylesheet, tokens shared with videoclip
 test/gen/              # in-memory fixture writers for the canonical 10x20x30 mm box
-scripts/copy-wasm.mjs  # stages Draco / Basis / OCCT into public/vendor on install
-scripts/check-no-network.mjs
-scripts/verify-viewer.mjs   # end-to-end camera checks driven through CDP
+scripts/copy-wasm.js  # stages Draco / Basis / OCCT into public/vendor on install
+scripts/check-no-network.js
+scripts/verify-viewer.js   # end-to-end camera checks driven through CDP
 docs/SPIKES.md         # what was verified before the architecture was committed to
 ```
 

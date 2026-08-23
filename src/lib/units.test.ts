@@ -44,17 +44,25 @@ describe('unit table', () => {
 
 describe('autoUnit', () => {
   it.each([
-    [0, 'mm'], [1e-6, 'mm'], [0.999, 'mm'], [1, 'm'], [999, 'm'], [1000, 'km'], [1e6, 'km'],
+    [0, 'mm'],
+    [1e-6, 'mm'],
+    [0.999, 'mm'],
+    [1, 'm'],
+    [999, 'm'],
+    [1000, 'km'],
+    [1e6, 'km'],
   ] as const)('metric: %f m -> %s', (m, want) => {
     expect(autoUnit(m, 'metric')).toBe(want);
   });
 
-  it.each([[0, 'in'], [0.3047, 'in'], [0.3048, 'ft'], [1000, 'ft']] as const)(
-    'imperial: %f m -> %s',
-    (m, want) => {
-      expect(autoUnit(m, 'imperial')).toBe(want);
-    },
-  );
+  it.each([
+    [0, 'in'],
+    [0.3047, 'in'],
+    [0.3048, 'ft'],
+    [1000, 'ft'],
+  ] as const)('imperial: %f m -> %s', (m, want) => {
+    expect(autoUnit(m, 'imperial')).toBe(want);
+  });
 
   it('never auto-selects centimetres — a drawing is in mm or m', () => {
     const picked = new Set([0.001, 0.05, 0.5, 5, 5000].map((m) => autoUnit(m, 'metric')));
@@ -89,9 +97,7 @@ describe('decimalsFor', () => {
  * literally rather than recomputed from the same formula the code uses.
  */
 describe('formatLength', () => {
-  const CASES: ReadonlyArray<
-    readonly [number, number | null, UnitChoice, UnitSystem, string]
-  > = [
+  const CASES: ReadonlyArray<readonly [number, number | null, UnitChoice, UnitSystem, string]> = [
     [124.53, 0.001, 'auto', 'metric', '124.53 mm'],
     [8.2043, 0.001, 'auto', 'metric', '8.204 mm'],
     [1234.5, 0.001, 'auto', 'metric', '1.2345 m'],
@@ -173,12 +179,16 @@ describe('formatDims', () => {
 });
 
 describe('unitFromMetersPerUnit', () => {
-  it.each([[1e-3, 'mm'], [1e-2, 'cm'], [1, 'm'], [1e3, 'km'], [0.0254, 'in'], [0.3048, 'ft']] as const)(
-    '%f -> %s',
-    (mpu, want) => {
-      expect(unitFromMetersPerUnit(mpu)).toBe(want);
-    },
-  );
+  it.each([
+    [1e-3, 'mm'],
+    [1e-2, 'cm'],
+    [1, 'm'],
+    [1e3, 'km'],
+    [0.0254, 'in'],
+    [0.3048, 'ft'],
+  ] as const)('%f -> %s', (mpu, want) => {
+    expect(unitFromMetersPerUnit(mpu)).toBe(want);
+  });
 
   it('returns null for a scale that is not a named unit', () => {
     expect(unitFromMetersPerUnit(0.5)).toBeNull();

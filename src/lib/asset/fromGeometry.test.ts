@@ -91,7 +91,10 @@ describe('countsFor', () => {
 
   it('ignores lines for every count', () => {
     expect(countsFor([mesh({ topology: 'lines' })])).toEqual({
-      meshes: 0, triangles: 0, vertices: 0, points: 0,
+      meshes: 0,
+      triangles: 0,
+      vertices: 0,
+      points: 0,
     });
   });
 

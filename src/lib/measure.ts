@@ -31,7 +31,8 @@ export interface Measurement {
   readonly b: MeasurePoint;
 }
 
-export type MeasureDraft = { readonly phase: 'idle' } | { readonly phase: 'first'; readonly a: MeasurePoint };
+export type MeasureDraft =
+  { readonly phase: 'idle' } | { readonly phase: 'first'; readonly a: MeasurePoint };
 
 export interface MeasureState {
   readonly mode: MeasureMode;

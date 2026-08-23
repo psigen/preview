@@ -68,7 +68,7 @@ for (const f of EXTRA_FILES) {
 if (offenders.length) {
   console.error('[check-no-network] runtime URLs found — the app must work offline:');
   for (const o of offenders) console.error('  ' + o);
-  console.error('  Add to ALLOW in scripts/check-no-network.mjs only if it is never fetched.');
+  console.error('  Add to ALLOW in scripts/check-no-network.js only if it is never fetched.');
   process.exit(1);
 }
 console.log('[check-no-network] no runtime URLs in src/ or index.html');

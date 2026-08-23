@@ -17,7 +17,13 @@ import { registry } from '../registry';
 import { fetchOcctWasm } from '../decoders/occtWasm';
 import { isWorkerEligible, parseInWorker, workersAvailable } from '../workers/client';
 import type { TranscodeResult } from '../workers/protocol';
-import { DEFAULT_QUALITY, type LoadContext, type LoadInput, type ProgressReport, type QualityOptions } from '../registry/types';
+import {
+  DEFAULT_QUALITY,
+  type LoadContext,
+  type LoadInput,
+  type ProgressReport,
+  type QualityOptions,
+} from '../registry/types';
 import type { GeometryPipeline } from '../registry/types';
 import { finalize } from './finalize';
 
@@ -63,7 +69,13 @@ async function runTranscode(
     // problem rather than a parse failure, and the buffers are still intact because nothing
     // was transferred. Anything else is a genuine error and must surface.
     if (err instanceof Error && /worker/i.test(err.message) && !mayTransfer) {
-      ctx.warn(warn('fallback-main-thread', 'Parsing on the main thread; workers are unavailable.', 'info'));
+      ctx.warn(
+        warn(
+          'fallback-main-thread',
+          'Parsing on the main thread; workers are unavailable.',
+          'info',
+        ),
+      );
       return pipeline.transcode(input, ctx);
     }
     throw err;
@@ -184,7 +196,11 @@ export async function loadAsset(input: LoadInput, options: LoadOptions = {}): Pr
 }
 
 /** Convenience for callers that have a single file and no companions. */
-export function singleFileInput(name: string, bytes: ArrayBuffer, formatHint?: FormatId): LoadInput {
+export function singleFileInput(
+  name: string,
+  bytes: ArrayBuffer,
+  formatHint?: FormatId,
+): LoadInput {
   const lower = name.toLowerCase();
   return {
     primary: { name: lower, path: lower, bytes },

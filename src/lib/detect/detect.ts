@@ -204,7 +204,9 @@ export function snifferFor(id: FormatId): Sniffer | undefined {
 
 /** Every extension the app will accept, for an <input accept="..."> attribute. */
 export function acceptAttribute(): string {
-  return SNIFFERS.flatMap((s) => s.extensions).sort().join(',');
+  return SNIFFERS.flatMap((s) => s.extensions)
+    .sort()
+    .join(',');
 }
 
 export function formatsForExtension(ext: string): FormatId[] {

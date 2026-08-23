@@ -27,7 +27,9 @@ export const stlPipeline: GeometryPipeline = {
     // ASCII paths, and the format requires a facet normal on every facet, so it cannot fire.
     if (mesh.colors) {
       // Only some writers emit these, via a non-standard header extension.
-      warnings.push(warn('unsupported-feature', 'Per-facet colours were found and applied.', 'info'));
+      warnings.push(
+        warn('unsupported-feature', 'Per-facet colours were found and applied.', 'info'),
+      );
     }
 
     const meshes = [mesh];

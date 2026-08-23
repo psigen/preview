@@ -67,13 +67,20 @@ function convertMesh(mesh: OcctMesh, materials: MaterialTable): MeshPayload | nu
 }
 
 /** Depth-first walk of OCCT's node tree, flattened into the payload's parent-index form. */
-function walk(node: OcctNode, parent: number, nodes: NodePayload[], meshRemap: Map<number, number>): void {
+function walk(
+  node: OcctNode,
+  parent: number,
+  nodes: NodePayload[],
+  meshRemap: Map<number, number>,
+): void {
   const self = nodes.length;
   nodes.push({
     name: node.name || (parent === -1 ? 'root' : 'part'),
     parent,
     // OCCT applies every placement itself, so a node carries no transform of its own.
-    meshes: (node.meshes ?? []).map((i) => meshRemap.get(i)).filter((i): i is number => i !== undefined),
+    meshes: (node.meshes ?? [])
+      .map((i) => meshRemap.get(i))
+      .filter((i): i is number => i !== undefined),
   });
   for (const child of node.children ?? []) walk(child, self, nodes, meshRemap);
 }

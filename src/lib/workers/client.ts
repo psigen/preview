@@ -112,7 +112,11 @@ export async function parseInWorker(options: ParseOptions): Promise<TranscodeRes
   if (wasmBinary) transfer.push(wasmBinary);
 
   return new Promise<TranscodeResult>((resolve, reject) => {
-    pending.set(id, { resolve, reject, ...(options.onProgress ? { onProgress: options.onProgress } : {}) });
+    pending.set(id, {
+      resolve,
+      reject,
+      ...(options.onProgress ? { onProgress: options.onProgress } : {}),
+    });
     // Deduped: a companion may share a buffer with the primary, and transferring the same
     // ArrayBuffer twice throws.
     active.postMessage(request, { transfer: [...new Set(transfer)] });

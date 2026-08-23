@@ -42,14 +42,17 @@ describe('usdaHeaderMetadata', () => {
  * agree. A three upgrade that relocates the bake breaks this loudly.
  */
 describe('stage metadata read back from the transform matches the file', () => {
-  it.each(MATRIX)('metersPerUnit=$metersPerUnit upAxis=$upAxis', async ({ metersPerUnit, upAxis }) => {
-    const bytes = usda(metersPerUnit, upAxis);
-    const declared = usdaHeaderMetadata(new TextDecoder().decode(bytes));
-    const inferred = readStageInfo(await parse(bytes));
+  it.each(MATRIX)(
+    'metersPerUnit=$metersPerUnit upAxis=$upAxis',
+    async ({ metersPerUnit, upAxis }) => {
+      const bytes = usda(metersPerUnit, upAxis);
+      const declared = usdaHeaderMetadata(new TextDecoder().decode(bytes));
+      const inferred = readStageInfo(await parse(bytes));
 
-    expect(inferred.sourceMetersPerUnit).toBeCloseTo(declared.metersPerUnit!, 12);
-    expect(inferred.sourceUpAxis).toBe(declared.upAxis);
-  });
+      expect(inferred.sourceMetersPerUnit).toBeCloseTo(declared.metersPerUnit!, 12);
+      expect(inferred.sourceUpAxis).toBe(declared.upAxis);
+    },
+  );
 
   it('works through a usdz package too', async () => {
     const inferred = readStageInfo(await parse(usdz(0.001, 'Z')));

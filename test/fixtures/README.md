@@ -1,6 +1,6 @@
 # Committed fixtures
 
-Everything here is a file that cannot be generated in-process. Everything that *can* be is
+Everything here is a file that cannot be generated in-process. Everything that _can_ be is
 built in `test/gen/` instead, so it cannot go stale.
 
 ## `box-mm.step`, `box-inch.step`

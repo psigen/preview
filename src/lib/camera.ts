@@ -10,7 +10,15 @@ import { normalize, add, scale, angleBetweenDeg, type Vec3 } from './vec3';
 
 export type ViewId = 'front' | 'back' | 'left' | 'right' | 'top' | 'bottom' | 'iso';
 
-export const VIEW_IDS: readonly ViewId[] = ['front', 'back', 'left', 'right', 'top', 'bottom', 'iso'];
+export const VIEW_IDS: readonly ViewId[] = [
+  'front',
+  'back',
+  'left',
+  'right',
+  'top',
+  'bottom',
+  'iso',
+];
 
 const ISO = 1 / Math.sqrt(3);
 

@@ -9,7 +9,9 @@ export default tseslint.config(
   ...tseslint.configs.recommended,
   {
     // Build/tooling scripts run in Node, not the browser.
-    files: ['scripts/**/*.mjs', '*.config.{js,mjs}'],
+    // Plain .js, because package.json sets "type": "module" — every file here is already
+    // ESM, so the .mjs extension would add nothing.
+    files: ['scripts/**/*.js', '*.config.js'],
     languageOptions: { globals: globals.nodeBuiltin },
   },
   {
@@ -62,7 +64,10 @@ export default tseslint.config(
         'error',
         {
           patterns: [
-            { group: ['react', 'react-dom', '@react-three/*'], message: 'src/lib must stay React-free.' },
+            {
+              group: ['react', 'react-dom', '@react-three/*'],
+              message: 'src/lib must stay React-free.',
+            },
           ],
         },
       ],
