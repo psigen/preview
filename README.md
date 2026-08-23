@@ -32,10 +32,11 @@ and the format-detection library; the viewer, loader plugins and ruler are still
 | Drag-and-drop, folder drop, in-place replacement | done |
 | **Measurement ruler** | done |
 | **STEP and IGES** (the CAD stretch goal) | done |
-| OBJ, 3MF, FBX | not yet |
+| **OBJ + MTL**, and sidecar resolution for multi-file drops | done |
+| 3MF, FBX | not yet |
 
-545 unit tests pass headless across a Node tier and a jsdom tier, plus a
-46-check end-to-end verification (`npm run verify:viewer`) that drives the real
+569 unit tests pass headless across a Node tier and a jsdom tier, plus a
+51-check end-to-end verification (`npm run verify:viewer`) that drives the real
 UI in headless Chrome, including a calibrated geometry-leak check.
 
 The four must-have formats all load. A 10 × 20 × 30 mm box reads identically whether it
@@ -84,7 +85,7 @@ npm run verify:viewer # end-to-end camera checks in headless Chrome (needs a bui
 | 3MF | `.3mf` | three `3MFLoader` | declared (`unit` attribute) |
 | STL | `.stl` | three `STLLoader` — **working** | none — abstract |
 | PLY | `.ply` | three `PLYLoader` — **working** | none — abstract |
-| OBJ | `.obj` (+ `.mtl`) | three `OBJLoader` | none — abstract |
+| OBJ | `.obj` (+ `.mtl`) | three `OBJLoader` + `MTLLoader` — **working** | none — abstract |
 | FBX | `.fbx` | three `FBXLoader` | none — abstract |
 
 Formats are identified by **magic bytes first**, with the filename only as a tie-breaker, so a
