@@ -130,7 +130,7 @@ describe('measureReducer', () => {
   });
 
   /** Measurements are world-space points, meaningless against different geometry. */
-  it('reset wipes the data but preserves the tool preferences', () => {
+  it('reset wipes the data and disarms the tool', () => {
     let s = on({ snap: 'vertex' });
     s = measureReducer(s, { type: 'pick', point: pt([0, 0, 0]) });
     s = measureReducer(s, { type: 'pick', point: pt([1, 0, 0]) });
@@ -138,8 +138,19 @@ describe('measureReducer', () => {
     expect(s.items).toEqual([]);
     expect(s.selectedId).toBeNull();
     expect(s.draft.phase).toBe('idle');
-    expect(s.mode).toBe('point-to-point');
+    // Off, so the first click on the new model cannot drop an unasked-for point.
+    expect(s.mode).toBe('off');
+    // Snap is a hidden preference with no on-screen state, so it survives.
     expect(s.snap).toBe('vertex');
+  });
+
+  it('reset abandons a half-finished measurement rather than carrying it over', () => {
+    let s = on({});
+    s = measureReducer(s, { type: 'pick', point: pt([0, 0, 0]) });
+    expect(s.draft.phase).toBe('first');
+    s = measureReducer(s, { type: 'reset' });
+    expect(s.draft.phase).toBe('idle');
+    expect(s.mode).toBe('off');
   });
 
   it('is identity for a no-op mode, snap or selection change', () => {

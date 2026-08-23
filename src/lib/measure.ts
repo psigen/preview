@@ -111,10 +111,10 @@ export function measureReducer(state: MeasureState, action: MeasureAction): Meas
         : { ...state, items: [], selectedId: null, draft: { phase: 'idle' } };
 
     case 'reset':
-      // mode and snap are tool preferences, not model data, so they survive a new model.
-      // Everything else is a pair of world-space points, meaningless against different
-      // geometry.
-      return { ...initialMeasureState, mode: state.mode, snap: state.snap };
+      // A new model starts with the tool OFF. Leaving it armed means the first click on
+      // the model the user just opened drops a measurement point they did not ask for.
+      // `snap` survives: it is a hidden preference with no on-screen state of its own.
+      return { ...initialMeasureState, snap: state.snap };
 
     default:
       return state;

@@ -863,6 +863,22 @@ try {
     `${tinyMarker.w}x${tinyMarker.h} vs ${hugeMarker.w}x${hugeMarker.h}`,
   );
 
+  //     Selecting a new model disarms the tool. Carrying the armed state over means the
+  //     first click on the model the user just opened silently drops a measurement point.
+  //     We arrive here with stl-big loaded, measuring, and a draft point on screen.
+  const pressed = () =>
+    evalJs(
+      `document.querySelector('[data-action="measure-toggle"]')?.getAttribute('aria-pressed')`,
+    );
+  check('the measure tool is armed before switching models', (await pressed()) === 'true');
+  await click('[data-action="back"]');
+  await waitFor(`!!document.querySelector('[data-sample="stl-mm"]')`);
+  await click('[data-sample="stl-mm"]');
+  await waitFor(`!!document.querySelector('[data-action="measure-toggle"]')`);
+  check('selecting a new model disarms the measure tool', (await pressed()) === 'false');
+  check('and its measurements do not carry over', (await rows()).length === 0);
+  check('and neither does a half-finished draft point', (await markerBox()).n === 0);
+
   // #/about is a shareable URL, so it must work as a cold entry point too: the dialog over
   // the empty state, not a page that no longer exists. Done last, because the reload it
   // needs would strand anything that expected a model to still be open.
